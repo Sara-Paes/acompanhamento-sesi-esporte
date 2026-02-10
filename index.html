@@ -7,9 +7,39 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js">
+async function ensureAuth() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    alert("Você precisa estar logado para executar esta ação.");
+    throw new Error("Usuário não autenticado");
+  }
+  return session;
+}
+
+</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js">
+async function ensureAuth() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    alert("Você precisa estar logado para executar esta ação.");
+    throw new Error("Usuário não autenticado");
+  }
+  return session;
+}
+
+</script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+async function ensureAuth() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    alert("Você precisa estar logado para executar esta ação.");
+    throw new Error("Usuário não autenticado");
+  }
+  return session;
+}
+
+</script>
     <style>
         * {
             margin: 0;
@@ -1357,7 +1387,10 @@ const SUPABASE_ANON_KEY = "sb_publishable_u3dOv62_ppsPRrIk4U-plA_ENwWtk_4";
 
 // Cria o cliente do Supabase no navegador
 // (Seguro porque o controle real de acesso é feito no banco via RLS)
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseClient = window.supabase.createClient(
+  "https://wgbdbazajqswszhzzodt.supabase.co",
+  "sb_publishable_u3dOv62_ppsPRrIk4U-plA_ENwWtk_4"
+);
 
 // Cache em memória (mantém layout/funcionalidades iguais, só troca o "onde salva")
 let tasksCache = [];
@@ -2450,6 +2483,16 @@ window.onclick = function(event) {
     if (event.target === taskModal) closeTaskModal();
     if (event.target === minutesModal) closeMinutesModal();
 };
+
+async function ensureAuth() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    alert("Você precisa estar logado para executar esta ação.");
+    throw new Error("Usuário não autenticado");
+  }
+  return session;
+}
+
 </script>
 </body>
 </html>
