@@ -1365,6 +1365,38 @@
             }
         });
 
+  // --- Supabase Auth compat (v1/v2) ---
+  async function sbGetSession() {
+    try {
+      if (supabaseClient?.auth?.getSession) {
+        return await supabaseClient.auth.getSession();
+      }
+      // supabase-js v1 fallback
+      const session = (typeof supabaseClient?.auth?.session === 'function') ? supabaseClient.auth.session() : null;
+      return { data: { session }, error: null };
+    } catch (e) {
+      return { data: { session: null }, error: e };
+    }
+  }
+
+  async function sbSignInWithEmailPassword(email, password) {
+    try {
+      if (supabaseClient?.auth?.signInWithPassword) {
+        // v2
+        return await supabaseClient.auth.signInWithPassword({ email, password });
+      }
+      // v1
+      if (supabaseClient?.auth?.signIn) {
+        return await supabaseClient.auth.signIn({ email, password });
+      }
+      return { data: null, error: new Error('Supabase auth client indisponível') };
+    } catch (e) {
+      return { data: null, error: e };
+    }
+  }
+
+
+
         // Cache em memória (evita várias queries)
         let cachedTasks = [];
         let cachedMinutes = [];
@@ -1532,7 +1564,7 @@
 
         async function initAuthAndData() {
             try {
-                const { data: { session }, error } = await supabaseClient.auth.getSession();
+                const { data: { session }, error } = await sbGetSession();
                 if (error) console.warn('getSession error:', error);
 
                 if (session && session.user) {
@@ -1559,7 +1591,7 @@
             document.getElementById('loginError').textContent = '';
 
             try {
-                const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+                const { data, error } = await sbSignInWithEmailPassword(email, password);
                 if (error) {
                     document.getElementById('loginError').textContent = 'Login inválido: ' + (error.message || '');
                     return;
@@ -1736,7 +1768,7 @@
             }
 
             // garante que existe sessão
-            const { data: { session } } = await supabaseClient.auth.getSession();
+            const { data: { session } } = await sbGetSession();
             if (!session) {
                 alert('Você não está logado. Faça login novamente.');
                 await logout();
@@ -1880,7 +1912,7 @@
                 return;
             }
 
-            const { data: { session } } = await supabaseClient.auth.getSession();
+            const { data: { session } } = await sbGetSession();
             if (!session) {
                 alert('Você não está logado. Faça login novamente.');
                 await logout();
@@ -1959,7 +1991,7 @@
                 return;
             }
 
-            const { data: { session } } = await supabaseClient.auth.getSession();
+            const { data: { session } } = await sbGetSession();
             if (!session) {
                 alert('Você não está logado. Faça login novamente.');
                 await logout();
@@ -2048,7 +2080,7 @@
                 return;
             }
 
-            const { data: { session } } = await supabaseClient.auth.getSession();
+            const { data: { session } } = await sbGetSession();
             if (!session) {
                 alert('Você não está logado. Faça login novamente.');
                 await logout();
@@ -2247,7 +2279,7 @@
                 return;
             }
 
-            const { data: { session } } = await supabaseClient.auth.getSession();
+            const { data: { session } } = await sbGetSession();
             if (!session) {
                 alert('Você não está logado. Faça login novamente.');
                 await logout();
