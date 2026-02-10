@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
             margin: 0;
@@ -1064,11 +1065,12 @@
         <div class="login-card">
             <h1>🔐 Acesso Restrito</h1>
             <p>Digite a senha para editar tarefas e atas</p>
-            <form id="loginForm" onsubmit="handleLogin(event)">
-                <input type="password" id="passwordInput" placeholder="Senha" required>
-                <button type="submit" class="login-btn">Entrar</button>
-                <button type="button" class="view-only-btn" onclick="viewOnly()">Apenas Visualizar</button>
-            </form>
+            <form id="loginForm" onsubmit="handleLogin(event)" class="login-form">
+    <input type="email" id="emailInput" placeholder="Email" autocomplete="username" required>
+    <input type="password" id="passwordInput" placeholder="Senha" autocomplete="current-password" required>
+    <button type="submit" class="login-btn">Entrar</button>
+    <button type="button" class="view-only-btn" onclick="viewOnly()">Apenas Visualizar</button>
+</form>
             <div id="loginError" class="login-error"></div>
         </div>
     </div>
@@ -1343,956 +1345,1111 @@
     </div>
 
     <script>
-        let statusChart, phaseChart;
-        let isAuthenticated = false;
-        let isViewOnly = false;
-        let editingTaskId = null;
-        const PASSWORD = "SESIESPORTEAPP";
-        
-        // ===== GOOGLE DRIVE SYNC =====
-        function syncToGoogleDrive() {
-            if (isViewOnly) return; // Não sincroniza em modo visualização
-            
-            const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
-            const minutes = JSON.parse(localStorage.getItem('minutes')) || [];
-            
-            const backup = {
-                timestamp: new Date().toISOString(),
-                tasks: tasks,
-                minutes: minutes,
-                version: '1.0.0'
-            };
-            
-            // Salvar no localStorage como backup local
-            const backups = JSON.parse(localStorage.getItem('backups')) || [];
-            backups.push(backup);
-            
-            // Manter apenas os últimos 10 backups
-            if (backups.length > 10) {
-                backups.shift();
-            }
-            
-            localStorage.setItem('backups', JSON.stringify(backups));
-            console.log('Backup local criado:', backup.timestamp);
-        }
-        
-        function syncFromGoogleDrive() {
-            // Verificar se há backups locais
-            const backups = JSON.parse(localStorage.getItem('backups')) || [];
-            if (backups.length > 0) {
-                console.log('Backups locais encontrados:', backups.length);
-            }
-        }
-        
-        function exportBackup() {
-            const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
-            const minutes = JSON.parse(localStorage.getItem('minutes')) || [];
-            
-            const backup = {
-                timestamp: new Date().toISOString(),
-                tasks: tasks,
-                minutes: minutes,
-                version: '1.0.0'
-            };
-            
-            const dataStr = JSON.stringify(backup, null, 2);
-            const dataBlob = new Blob([dataStr], { type: 'application/json' });
-            const url = URL.createObjectURL(dataBlob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `backup-acompanhamento-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-        }
-        
-        function importBackup(file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const backup = JSON.parse(e.target.result);
-                    if (backup.tasks && backup.minutes) {
-                        localStorage.setItem('tasks', JSON.stringify(backup.tasks));
-                        localStorage.setItem('minutes', JSON.stringify(backup.minutes));
-                        alert('Backup restaurado com sucesso!');
-                        location.reload();
-                    } else {
-                        alert('Arquivo de backup inválido!');
-                    }
-                } catch (error) {
-                    alert('Erro ao restaurar backup: ' + error.message);
-                }
-            };
-            reader.readAsText(file);
-        }
+// =========================
+// CONFIGURAÇÃO SUPABASE
+// =========================
+// Objetivo: usar um backend real (Supabase) para:
+// 1) autenticar por email+senha (sem OAuth)
+// 2) permitir leitura pública (view-only) com ANON key
+// 3) permitir escrita APENAS para usuários logados (RLS + auth)
+const SUPABASE_URL = "https://wgbdbazajqswszhzzodt.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_u3dOv62_ppsPRrIk4U-plA_ENwWtk_4";
 
-        // Inicializar ao carregar a página
-        document.addEventListener('DOMContentLoaded', function() {
-            checkAuth();
-            // Sincronizar com Google Drive ao carregar
-            syncFromGoogleDrive();
-            // Configurar sincronização automática a cada 5 minutos
-            setInterval(syncToGoogleDrive, 5 * 60 * 1000);
+// Cria o cliente do Supabase no navegador
+// (Seguro porque o controle real de acesso é feito no banco via RLS)
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Cache em memória (mantém layout/funcionalidades iguais, só troca o "onde salva")
+let tasksCache = [];
+let minutesCache = [];
+
+let statusChart, phaseChart;
+let isAuthenticated = false; // logado (supabase session)
+let isViewOnly = false;      // modo somente leitura
+let editingTaskId = null;
+let editingMinutesId = null;
+
+// =========================
+// BOOTSTRAP
+// =========================
+document.addEventListener('DOMContentLoaded', async function() {
+    await restoreSessionIfAny();
+    // Sempre permite visualizar (público) – a leitura depende da sua policy SELECT
+    // Se houver sessão: libera edição
+    await showAppOrLogin();
+});
+
+async function restoreSessionIfAny() {
+    const { data } = await supabaseClient.auth.getSession();
+    if (data && data.session) {
+        isAuthenticated = true;
+        isViewOnly = false;
+    }
+}
+
+async function showAppOrLogin() {
+    if (isAuthenticated) {
+        showApp();
+    } else {
+        // Se não está logado, mostra tela de login.
+        // A opção "Apenas Visualizar" continua disponível.
+        document.getElementById('loginScreen').style.display = 'flex';
+        document.getElementById('mainApp').style.display = 'none';
+        document.getElementById('authBadge').style.display = 'none';
+    }
+}
+
+// =========================
+// AUTENTICAÇÃO (email + senha)
+// =========================
+async function handleLogin(event) {
+    event.preventDefault();
+
+    const email = document.getElementById('emailInput').value.trim();
+    const password = document.getElementById('passwordInput').value;
+
+    // Objetivo: criar uma sessão de usuário no Supabase.
+    // Com isso, o banco reconhece "authenticated" e libera escrita via RLS.
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+    if (error) {
+        document.getElementById('loginError').textContent =
+            (error.message || 'Falha no login. Verifique email/senha.');
+        return;
+    }
+
+    if (data && data.session) {
+        isAuthenticated = true;
+        isViewOnly = false;
+        document.getElementById('loginError').textContent = '';
+        showApp();
+    }
+}
+
+async function viewOnly() {
+    // Objetivo: permitir acesso público SOMENTE leitura (sem login).
+    // Importante: se alguém estava logado antes, garantimos que sai da sessão.
+    await supabaseClient.auth.signOut();
+    isAuthenticated = false;
+    isViewOnly = true;
+    document.getElementById('loginError').textContent = '';
+    showApp();
+}
+
+async function logout() {
+    // Objetivo: encerrar sessão e voltar ao estado seguro de login.
+    await supabaseClient.auth.signOut();
+    isAuthenticated = false;
+    isViewOnly = false;
+    editingTaskId = null;
+    editingMinutesId = null;
+
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('mainApp').style.display = 'none';
+    document.getElementById('authBadge').style.display = 'none';
+
+    const emailEl = document.getElementById('emailInput');
+    if (emailEl) emailEl.value = '';
+    document.getElementById('passwordInput').value = '';
+    document.getElementById('loginError').textContent = '';
+}
+
+// =========================
+// APP UI
+// =========================
+function setTodayDate() {
+    const today = new Date().toISOString().split('T')[0];
+    const taskDate = document.getElementById('taskDate');
+    const minutesDate = document.getElementById('minutesDate');
+    if (taskDate) taskDate.value = today;
+    if (minutesDate) minutesDate.value = today;
+}
+
+async function showApp() {
+    // Objetivo: renderizar app e carregar dados do Supabase.
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'block';
+    document.getElementById('authBadge').style.display = 'block';
+
+    const authText = document.getElementById('authText');
+    const badge = document.getElementById('authBadge');
+
+    if (isViewOnly || !isAuthenticated) {
+        authText.textContent = '👁️ Apenas Visualizando';
+        badge.classList.add('view-only');
+        document.getElementById('btnNewTask').disabled = true;
+        document.getElementById('btnNewMinutes').disabled = true;
+    } else {
+        authText.textContent = '✅ Edição Ativada';
+        badge.classList.remove('view-only');
+        document.getElementById('btnNewTask').disabled = false;
+        document.getElementById('btnNewMinutes').disabled = false;
+    }
+
+    setTodayDate();
+
+    await loadTasks();
+    await loadMinutes();
+    updateDashboard();
+}
+
+// Mantém navegação por abas
+function switchTab(tabName) {
+    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+
+    document.getElementById(tabName).classList.add('active');
+    event.target.classList.add('active');
+
+    if (tabName === 'dashboard') {
+        setTimeout(() => updateDashboard(), 100);
+    } else if (tabName === 'timeline') {
+        displayTimeline();
+    }
+}
+
+// =========================
+// MAPEAMENTO (tolerante a nomes de colunas)
+// =========================
+function normalizeTaskRow(row) {
+    return {
+        id: row.id ?? row.uuid ?? row.task_id,
+        description: row.tarefa ?? row.description ?? row.descricao ?? row.titulo ?? '',
+        responsible: row.responsavel ?? row.responsible ?? row.owner ?? '',
+        phase: row.fase ?? row.phase ?? 'outros',
+        status: row.status ?? 'pending',
+        date: row.data ?? row.data_criacao ?? row.date ?? '',
+        deadline: row.previsao_entrega ?? row.deadline ?? row.entrega ?? '',
+        notes: row.observacoes ?? row.notes ?? row.obs ?? ''
+    };
+}
+
+function normalizeMinutesRow(row) {
+    return {
+        id: row.id ?? row.uuid ?? row.minutes_id,
+        date: row.dados ?? row.data ?? row.date ?? '',
+        participants: row.participantes ?? row.participants ?? '',
+        achievements: row.alinhamentos ?? row.achievements ?? '',
+        notes: row.observacoes ?? row.notes ?? row.obs ?? ''
+    };
+}
+
+async function upsertTaskToSupabase(task) {
+    // Objetivo: gravar no banco com o mínimo de suposições sobre nomes de colunas.
+    // Tentativa 1: colunas em PT (mais provável pelo seu SQL e prints).
+    const payloadPT = {
+        id: task.id,
+        tarefa: task.description,
+        responsavel: task.responsible,
+        fase: task.phase,
+        status: task.status,
+        data: task.date || null,
+        previsao_entrega: task.deadline || null,
+        observacoes: task.notes
+    };
+
+    let res = await supabaseClient.from('tarefa').upsert(payloadPT).select().single();
+    if (!res.error) return normalizeTaskRow(res.data);
+
+    // Tentativa 2: colunas em EN (fallback).
+    const payloadEN = {
+        id: task.id,
+        description: task.description,
+        responsible: task.responsible,
+        phase: task.phase,
+        status: task.status,
+        date: task.date || null,
+        deadline: task.deadline || null,
+        notes: task.notes
+    };
+
+    res = await supabaseClient.from('tarefa').upsert(payloadEN).select().single();
+    if (res.error) throw res.error;
+    return normalizeTaskRow(res.data);
+}
+
+async function deleteTaskFromSupabase(id) {
+    const res = await supabaseClient.from('tarefa').delete().eq('id', id);
+    if (res.error) throw res.error;
+}
+
+async function upsertMinutesToSupabase(minutes) {
+    const payloadPT = {
+        id: minutes.id,
+        dados: minutes.date || null,
+        participantes: minutes.participants,
+        alinhamentos: minutes.achievements,
+        observacoes: minutes.notes
+    };
+
+    let res = await supabaseClient.from('atas').upsert(payloadPT).select().single();
+    if (!res.error) return normalizeMinutesRow(res.data);
+
+    const payloadEN = {
+        id: minutes.id,
+        date: minutes.date || null,
+        participants: minutes.participants,
+        achievements: minutes.achievements,
+        notes: minutes.notes
+    };
+
+    res = await supabaseClient.from('atas').upsert(payloadEN).select().single();
+    if (res.error) throw res.error;
+    return normalizeMinutesRow(res.data);
+}
+
+async function deleteMinutesFromSupabase(id) {
+    const res = await supabaseClient.from('atas').delete().eq('id', id);
+    if (res.error) throw res.error;
+}
+
+// =========================
+// CARREGAMENTO DE DADOS
+// =========================
+async function loadTasks() {
+    // Objetivo: carregar a lista do Supabase para a UI.
+    // - Em view-only: precisa de policy SELECT liberada para public/anon.
+    // - Em edição: SELECT também funciona, e a escrita fica segura via RLS.
+    const { data, error } = await supabaseClient
+        .from('tarefa')
+        .select('*');
+
+    if (error) {
+        console.error('Erro ao carregar tarefas:', error);
+        tasksCache = [];
+    } else {
+        tasksCache = (data || []).map(normalizeTaskRow);
+    }
+
+    filterTasks();
+    updateTasksInfo(tasksCache);
+    updateTotalTasks(tasksCache);
+}
+
+async function loadMinutes() {
+    const { data, error } = await supabaseClient
+        .from('atas')
+        .select('*');
+
+    if (error) {
+        console.error('Erro ao carregar atas:', error);
+        minutesCache = [];
+    } else {
+        minutesCache = (data || []).map(normalizeMinutesRow);
+    }
+
+    filterMinutes();
+    document.getElementById('minutesInfo').textContent = `${minutesCache.length} atas registradas`;
+}
+
+// =========================
+// TAREFAS (UI mantém igual)
+// =========================
+function openTaskModal(isEditing = false) {
+    if (!isAuthenticated || isViewOnly) {
+        alert('Você está em modo visualização. Faça login para editar.');
+        return;
+    }
+    if (!isEditing) {
+        editingTaskId = null;
+        document.getElementById('taskForm').reset();
+        document.getElementById('taskModalTitle').textContent = 'Adicionar Nova Tarefa';
+        document.getElementById('taskSubmitBtn').textContent = 'Adicionar Tarefa';
+        setTodayDate();
+    }
+    document.getElementById('taskModal').classList.add('active');
+}
+
+function closeTaskModal() {
+    document.getElementById('taskModal').classList.remove('active');
+    editingTaskId = null;
+}
+
+async function saveTask(event) {
+    event.preventDefault();
+    if (!isAuthenticated || isViewOnly) {
+        alert('Você está em modo visualização.');
+        return;
+    }
+
+    const task = {
+        id: editingTaskId || crypto.randomUUID(),
+        description: document.getElementById('taskDescription').value,
+        responsible: document.getElementById('taskResponsible').value,
+        phase: document.getElementById('taskPhase').value,
+        status: document.getElementById('taskStatus').value,
+        date: document.getElementById('taskDate').value,
+        deadline: document.getElementById('taskDeadline').value,
+        notes: document.getElementById('taskNotes').value
+    };
+
+    try {
+        await upsertTaskToSupabase(task);
+        closeTaskModal();
+        await loadTasks();
+        updateDashboard();
+    } catch (e) {
+        console.error(e);
+        alert('Não foi possível salvar a tarefa. Verifique se você está logado e se as políticas RLS de escrita estão ativas.');
+    }
+}
+
+function filterTasks() {
+    const searchTerm = (document.getElementById('searchTasks').value || '').toLowerCase();
+    const phaseFilter = document.getElementById('filterPhase').value;
+    const sortBy = document.getElementById('sortTasks').value;
+
+    let filtered = tasksCache.filter(task => {
+        const desc = (task.description || '').toLowerCase();
+        const resp = (task.responsible || '').toLowerCase();
+        const matchSearch = desc.includes(searchTerm) || resp.includes(searchTerm);
+        const matchPhase = !phaseFilter || task.phase === phaseFilter;
+        return matchSearch && matchPhase;
+    });
+
+    if (sortBy === 'data-desc') {
+        filtered.sort((a, b) => new Date(b.date || '1970-01-01') - new Date(a.date || '1970-01-01'));
+    } else if (sortBy === 'data-asc') {
+        filtered.sort((a, b) => new Date(a.date || '1970-01-01') - new Date(b.date || '1970-01-01'));
+    } else if (sortBy === 'status') {
+        const statusOrder = { 'pending': 1, 'in-progress': 2, 'completed': 3 };
+        filtered.sort((a, b) => (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99));
+    } else if (sortBy === 'entrega') {
+        filtered.sort((a, b) => {
+            const dateA = a.deadline ? new Date(a.deadline) : new Date('9999-12-31');
+            const dateB = b.deadline ? new Date(b.deadline) : new Date('9999-12-31');
+            return dateA - dateB;
         });
+    } else if (sortBy === 'responsavel') {
+        filtered.sort((a, b) => (a.responsible || '').localeCompare(b.responsible || ''));
+    }
 
-        // ===== AUTENTICAÇÃO =====
-        function handleLogin(event) {
-            event.preventDefault();
-            const password = document.getElementById('passwordInput').value;
-            
-            if (password === PASSWORD) {
-                isAuthenticated = true;
-                isViewOnly = false;
-                sessionStorage.setItem('auth_token', 'authenticated');
-                sessionStorage.setItem('view_only', 'false');
-                showApp();
+    displayTasks(filtered);
+}
+
+function displayTasks(tasks) {
+    const tasksList = document.getElementById('tasksList');
+
+    if (tasks.length === 0) {
+        tasksList.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">📋</div>
+                <div class="empty-text">Nenhuma tarefa encontrada</div>
+            </div>
+        `;
+        return;
+    }
+
+    tasksList.innerHTML = `<div class="items-list">${tasks.map(task => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const deadline = task.deadline ? new Date(task.deadline + 'T00:00:00') : null;
+        const daysUntilDeadline = deadline ? Math.floor((deadline - today) / (1000 * 60 * 60 * 24)) : null;
+
+        let deadlineClass = '';
+        let deadlineDisplay = '';
+
+        if (deadline) {
+            if (daysUntilDeadline < 0) {
+                deadlineClass = 'date-overdue';
+                deadlineDisplay = `⏳ Atrasado por ${Math.abs(daysUntilDeadline)} dias`;
+            } else if (daysUntilDeadline <= 2) {
+                deadlineClass = 'date-warning';
+                deadlineDisplay = `⏳ Faltam ${daysUntilDeadline} dias`;
             } else {
-                document.getElementById('loginError').textContent = 'Senha incorreta!';
-                document.getElementById('passwordInput').value = '';
+                deadlineDisplay = `⏳ Entrega: ${formatDate(task.deadline)}`;
             }
         }
 
-        function viewOnly() {
-            isAuthenticated = true;
-            isViewOnly = true;
-            sessionStorage.setItem('auth_token', 'authenticated');
-            sessionStorage.setItem('view_only', 'true');
-            showApp();
-        }
+        return `
+            <div class="item-card status-${task.status}">
+                <div class="item-content">
+                    <div class="item-title">${escapeHtml(task.description)}</div>
+                    <div class="item-meta">
+                        <span class="item-badge badge-${task.status}">${getStatusLabel(task.status)}</span>
+                        <span class="item-badge badge-phase">${getPhaseLabel(task.phase)}</span>
+                        ${task.responsible ? `<span class="item-responsible">👤 ${escapeHtml(task.responsible)}</span>` : ''}
+                    </div>
+                    <div class="item-dates">
+                        ${task.date ? `<span>📅 ${formatDate(task.date)}</span>` : ''}
+                        ${deadlineDisplay ? `<span class="${deadlineClass}">${deadlineDisplay}</span>` : ''}
+                    </div>
+                    ${task.notes ? `<div class="item-description">${escapeHtml(task.notes)}</div>` : ''}
+                </div>
+                <div class="item-actions">
+                    <button class="btn-icon" onclick="editTask('${task.id}')" title="Editar" ${(isViewOnly || !isAuthenticated) ? 'disabled' : ''}>✏️</button>
+                    <button class="btn-icon btn-delete" onclick="deleteTask('${task.id}')" title="Deletar" ${(isViewOnly || !isAuthenticated) ? 'disabled' : ''}>🗑️</button>
+                </div>
+            </div>
+        `;
+    }).join('')}</div>`;
+}
 
-        function checkAuth() {
-            const token = sessionStorage.getItem('auth_token');
-            const viewOnly = sessionStorage.getItem('view_only') === 'true';
-            
-            if (token) {
-                isAuthenticated = true;
-                isViewOnly = viewOnly;
-                showApp();
+async function deleteTask(id) {
+    if (!isAuthenticated || isViewOnly) {
+        alert('Você está em modo visualização.');
+        return;
+    }
+    if (!confirm('Tem certeza que deseja deletar esta tarefa?')) return;
+
+    try {
+        await deleteTaskFromSupabase(id);
+        await loadTasks();
+        updateDashboard();
+    } catch (e) {
+        console.error(e);
+        alert('Não foi possível deletar. Verifique login e políticas RLS.');
+    }
+}
+
+function editTask(id) {
+    if (!isAuthenticated || isViewOnly) {
+        alert('Você está em modo visualização.');
+        return;
+    }
+    const task = tasksCache.find(t => t.id === id);
+    if (!task) return;
+
+    editingTaskId = id;
+    document.getElementById('taskDescription').value = task.description || '';
+    document.getElementById('taskResponsible').value = task.responsible || '';
+    document.getElementById('taskPhase').value = task.phase || 'outros';
+    document.getElementById('taskStatus').value = task.status || 'pending';
+    document.getElementById('taskDate').value = task.date || '';
+    document.getElementById('taskDeadline').value = task.deadline || '';
+    document.getElementById('taskNotes').value = task.notes || '';
+
+    document.getElementById('taskModalTitle').textContent = 'Editar Tarefa';
+    document.getElementById('taskSubmitBtn').textContent = 'Atualizar Tarefa';
+
+    openTaskModal(true);
+}
+
+function updateTasksInfo(tasks) {
+    const total = tasks.length;
+    const inProgress = tasks.filter(t => t.status === 'in-progress').length;
+    const completed = tasks.filter(t => t.status === 'completed').length;
+    document.getElementById('tasksInfo').textContent = `${total} total • ${inProgress} em andamento • ${completed} concluídas`;
+}
+
+function updateTotalTasks(tasks) {
+    document.getElementById('totalTasks').textContent = tasks.length;
+}
+
+// =========================
+// ATAS
+// =========================
+function openMinutesModal(isEditing = false) {
+    if (!isAuthenticated || isViewOnly) {
+        alert('Você está em modo visualização. Faça login para editar.');
+        return;
+    }
+    if (!isEditing) {
+        editingMinutesId = null;
+        document.getElementById('minutesForm').reset();
+        document.getElementById('minutesModalTitle').textContent = 'Registrar Nova Ata';
+        document.getElementById('minutesSubmitBtn').textContent = 'Registrar Ata';
+        setTodayDate();
+    }
+    document.getElementById('minutesModal').classList.add('active');
+}
+
+function closeMinutesModal() {
+    document.getElementById('minutesModal').classList.remove('active');
+    editingMinutesId = null;
+}
+
+async function saveMinutes(event) {
+    event.preventDefault();
+    if (!isAuthenticated || isViewOnly) {
+        alert('Você está em modo visualização.');
+        return;
+    }
+
+    const minutes = {
+        id: editingMinutesId || crypto.randomUUID(),
+        date: document.getElementById('minutesDate').value,
+        participants: document.getElementById('minutesParticipants').value,
+        achievements: document.getElementById('minutesAchievements').value,
+        notes: document.getElementById('minutesNotes').value
+    };
+
+    try {
+        await upsertMinutesToSupabase(minutes);
+        closeMinutesModal();
+        await loadMinutes();
+    } catch (e) {
+        console.error(e);
+        alert('Não foi possível salvar a ata. Verifique login e políticas RLS.');
+    }
+}
+
+function filterMinutes() {
+    const searchTerm = (document.getElementById('searchMinutes').value || '').toLowerCase();
+
+    const filtered = minutesCache.filter(m => {
+        return (m.achievements || '').toLowerCase().includes(searchTerm) ||
+               (m.participants || '').toLowerCase().includes(searchTerm) ||
+               (m.date || '').includes(searchTerm);
+    });
+
+    displayMinutes(filtered);
+}
+
+function displayMinutes(list) {
+    const minutesContainer = document.getElementById('minutesList');
+
+    if (list.length === 0) {
+        minutesContainer.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">📋</div>
+                <div class="empty-text">Nenhuma ata encontrada</div>
+            </div>
+        `;
+        return;
+    }
+
+    minutesContainer.innerHTML = `<div class="items-list">${list.map(m => `
+        <div class="item-card">
+            <div class="item-content">
+                <div class="item-title">📅 ${formatDate(m.date)}</div>
+                ${m.participants ? `<div class="item-description"><strong>Participantes:</strong> ${escapeHtml(m.participants)}</div>` : ''}
+                <div class="item-description"><strong>ALINHAMENTOS</strong><br>${escapeHtml(m.achievements).replace(/\n/g,'<br>')}</div>
+                ${m.notes ? `<div class="item-description"><strong>OBSERVAÇÕES</strong><br>${escapeHtml(m.notes).replace(/\n/g,'<br>')}</div>` : ''}
+            </div>
+            <div class="item-actions">
+                <button class="btn-icon" onclick="editMinutes('${m.id}')" title="Editar" ${(isViewOnly || !isAuthenticated) ? 'disabled' : ''}>✏️</button>
+                <button class="btn-icon btn-delete" onclick="deleteMinutes('${m.id}')" title="Deletar" ${(isViewOnly || !isAuthenticated) ? 'disabled' : ''}>🗑️</button>
+            </div>
+        </div>
+    `).join('')}</div>`;
+}
+
+async function deleteMinutes(id) {
+    if (!isAuthenticated || isViewOnly) {
+        alert('Você está em modo visualização.');
+        return;
+    }
+    if (!confirm('Tem certeza que deseja deletar esta ata?')) return;
+
+    try {
+        await deleteMinutesFromSupabase(id);
+        await loadMinutes();
+    } catch (e) {
+        console.error(e);
+        alert('Não foi possível deletar. Verifique login e políticas RLS.');
+    }
+}
+
+function editMinutes(id) {
+    if (!isAuthenticated || isViewOnly) {
+        alert('Você está em modo visualização.');
+        return;
+    }
+    const m = minutesCache.find(x => x.id === id);
+    if (!m) return;
+
+    editingMinutesId = id;
+    document.getElementById('minutesDate').value = m.date || '';
+    document.getElementById('minutesParticipants').value = m.participants || '';
+    document.getElementById('minutesAchievements').value = m.achievements || '';
+    document.getElementById('minutesNotes').value = m.notes || '';
+
+    document.getElementById('minutesModalTitle').textContent = 'Editar Ata';
+    document.getElementById('minutesSubmitBtn').textContent = 'Atualizar Ata';
+
+    openMinutesModal(true);
+}
+
+// =========================
+// TIMELINE
+// =========================
+function displayTimeline() {
+    const timelineContainer = document.getElementById('timelineContainer');
+
+    if (tasksCache.length === 0) {
+        timelineContainer.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">📅</div>
+                <div class="empty-text">Nenhuma tarefa para exibir na timeline</div>
+            </div>
+        `;
+        return;
+    }
+
+    const sorted = [...tasksCache].sort((a, b) => new Date(a.date || '1970-01-01') - new Date(b.date || '1970-01-01'));
+    timelineContainer.innerHTML = `
+        <div class="timeline">
+            ${sorted.map(task => `
+                <div class="timeline-item status-${task.status}">
+                    <div class="timeline-content">
+                        <div class="timeline-date">${formatDate(task.date)}</div>
+                        <div class="timeline-title">${escapeHtml(task.description)}</div>
+                        <div class="timeline-info">
+                            ${getStatusLabel(task.status)} • ${getPhaseLabel(task.phase)}
+                            ${task.responsible ? ` • 👤 ${escapeHtml(task.responsible)}` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+// =========================
+// DASHBOARD (mantém igual)
+// =========================
+function updateDashboard() {
+    const tasks = tasksCache;
+
+    const total = tasks.length;
+    const pending = tasks.filter(t => t.status === 'pending').length;
+    const inProgress = tasks.filter(t => t.status === 'in-progress').length;
+    const completed = tasks.filter(t => t.status === 'completed').length;
+
+    document.getElementById('statTotal').textContent = total;
+    document.getElementById('statPending').textContent = pending;
+    document.getElementById('statInProgress').textContent = inProgress;
+    document.getElementById('statCompleted').textContent = completed;
+
+    updateStatusChart(pending, inProgress, completed);
+    updatePhaseChart(tasks);
+}
+
+function updateStatusChart(pending, inProgress, completed) {
+    const canvas = document.getElementById('statusChart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    if (statusChart) statusChart.destroy();
+
+    statusChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Pendente', 'Em Andamento', 'Concluída'],
+            datasets: [{
+                data: [pending, inProgress, completed],
+                backgroundColor: ['#d97706', '#3b82f6', '#059669'],
+                borderColor: '#ffffff',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        font: { family: "'Inter', sans-serif", size: 12 },
+                        padding: 15,
+                        color: '#475569'
+                    }
+                }
             }
         }
+    });
+}
 
-        function showApp() {
-            document.getElementById('loginScreen').style.display = 'none';
-            document.getElementById('mainApp').style.display = 'block';
-            document.getElementById('authBadge').style.display = 'block';
-            
-            const authText = document.getElementById('authText');
-            if (isViewOnly) {
-                authText.textContent = '👁️ Apenas Visualizando';
-                document.getElementById('authBadge').classList.add('view-only');
-                document.getElementById('btnNewTask').disabled = true;
-                document.getElementById('btnNewMinutes').disabled = true;
-            } else {
-                authText.textContent = '✅ Edição Ativada';
-                document.getElementById('btnNewTask').disabled = false;
-                document.getElementById('btnNewMinutes').disabled = false;
-            }
+function updatePhaseChart(tasks) {
+    const phases = { planejamento: 0, desenvolvimento: 0, testes: 0, deploy: 0, outros: 0 };
+    tasks.forEach(t => { if (phases.hasOwnProperty(t.phase)) phases[t.phase]++; });
 
-            loadTasks();
-            loadMinutes();
-            setTodayDate();
-            updateDashboard();
+    const canvas = document.getElementById('phaseChart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    if (phaseChart) phaseChart.destroy();
+
+    phaseChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Planejamento', 'Desenvolvimento', 'Testes', 'Deploy', 'Outros'],
+            datasets: [{
+                label: 'Tarefas',
+                data: [phases.planejamento, phases.desenvolvimento, phases.testes, phases.deploy, phases.outros],
+                backgroundColor: '#3b82f6',
+                borderColor: '#1e3a8a',
+                borderWidth: 1,
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            plugins: { legend: { display: false } },
+            scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } }
         }
+    });
+}
 
-        function logout() {
-            sessionStorage.removeItem('auth_token');
-            sessionStorage.removeItem('view_only');
-            isAuthenticated = false;
-            isViewOnly = false;
-            editingTaskId = null;
-            document.getElementById('loginScreen').style.display = 'flex';
-            document.getElementById('mainApp').style.display = 'none';
-            document.getElementById('authBadge').style.display = 'none';
-            document.getElementById('passwordInput').value = '';
-            document.getElementById('loginError').textContent = '';
-        }
+// =========================
+// EXPORT / BACKUP (mantém)
+// =========================
+function exportBackup() {
+    const backup = {
+        timestamp: new Date().toISOString(),
+        tasks: tasksCache,
+        minutes: minutesCache,
+        version: '1.0.0'
+    };
 
-        // Definir data de hoje nos campos de data
-        function setTodayDate() {
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('taskDate').value = today;
-            document.getElementById('minutesDate').value = today;
-        }
+    const dataStr = JSON.stringify(backup, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `backup-acompanhamento-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
 
-        // Alternar entre abas
-        function switchTab(tabName) {
-            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-            
-            document.getElementById(tabName).classList.add('active');
-            event.target.classList.add('active');
+async function importBackup(file) {
+    if (!isAuthenticated || isViewOnly) {
+        alert('Para restaurar backup e gravar no Supabase, faça login.');
+        return;
+    }
 
-            if (tabName === 'dashboard') {
-                setTimeout(() => updateDashboard(), 100);
-            } else if (tabName === 'timeline') {
-                displayTimeline();
-            }
-        }
-
-        // ===== TAREFAS =====
-        function openTaskModal(isEditing = false) {
-            if (isViewOnly) {
-                alert('Você está em modo visualização. Faça login para editar.');
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        try {
+            const backup = JSON.parse(e.target.result);
+            if (!backup.tasks || !backup.minutes) {
+                alert('Arquivo de backup inválido!');
                 return;
             }
-            if (!isEditing) {
-                editingTaskId = null;
-                document.getElementById('taskForm').reset();
-                document.getElementById('taskModalTitle').textContent = 'Adicionar Nova Tarefa';
-                document.getElementById('taskSubmitBtn').textContent = 'Adicionar Tarefa';
-                setTodayDate();
-            }
-            document.getElementById('taskModal').classList.add('active');
-        }
 
-        function closeTaskModal() {
-            document.getElementById('taskModal').classList.remove('active');
-            editingTaskId = null;
-        }
-
-        function saveTask(event) {
-            event.preventDefault();
-
-            const task = {
-                id: editingTaskId || Date.now(),
-                description: document.getElementById('taskDescription').value,
-                responsible: document.getElementById('taskResponsible').value,
-                phase: document.getElementById('taskPhase').value,
-                status: document.getElementById('taskStatus').value,
-                date: document.getElementById('taskDate').value,
-                deadline: document.getElementById('taskDeadline').value,
-                notes: document.getElementById('taskNotes').value
-            };
-
-            let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
-            
-            if (editingTaskId) {
-                // Atualizar tarefa existente
-                tasks = tasks.map(t => t.id === editingTaskId ? task : t);
-            } else {
-                // Adicionar nova tarefa
-                tasks.push(task);
-            }
-            
-            localStorage.setItem('tasks', JSON.stringify(tasks));
-
-            closeTaskModal();
-            loadTasks();
-            updateDashboard();
-        }
-
-        function loadTasks() {
-            const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
-            filterTasks();
-            updateTasksInfo(tasks);
-            updateTotalTasks(tasks);
-        }
-
-        function filterTasks() {
-            const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
-            const searchTerm = document.getElementById('searchTasks').value.toLowerCase();
-            const phaseFilter = document.getElementById('filterPhase').value;
-            const sortBy = document.getElementById('sortTasks').value;
-
-            let filtered = tasks.filter(task => {
-                const matchSearch = task.description.toLowerCase().includes(searchTerm) ||
-                                   task.responsible.toLowerCase().includes(searchTerm);
-                const matchPhase = !phaseFilter || task.phase === phaseFilter;
-                return matchSearch && matchPhase;
-            });
-
-            // Ordenação
-            if (sortBy === 'data-desc') {
-                filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
-            } else if (sortBy === 'data-asc') {
-                filtered.sort((a, b) => new Date(a.date) - new Date(b.date));
-            } else if (sortBy === 'status') {
-                const statusOrder = { 'pending': 1, 'in-progress': 2, 'completed': 3 };
-                filtered.sort((a, b) => statusOrder[a.status] - statusOrder[b.status]);
-            } else if (sortBy === 'entrega') {
-                filtered.sort((a, b) => {
-                    const dateA = a.deadline ? new Date(a.deadline) : new Date('9999-12-31');
-                    const dateB = b.deadline ? new Date(b.deadline) : new Date('9999-12-31');
-                    return dateA - dateB;
+            // Objetivo: restaurar no banco (upsert em lote).
+            // Observação: se você já tiver dados, o upsert atualiza pelo id.
+            for (const t of backup.tasks) {
+                await upsertTaskToSupabase({
+                    id: t.id || crypto.randomUUID(),
+                    description: t.description || '',
+                    responsible: t.responsible || '',
+                    phase: t.phase || 'outros',
+                    status: t.status || 'pending',
+                    date: t.date || null,
+                    deadline: t.deadline || null,
+                    notes: t.notes || ''
                 });
-            } else if (sortBy === 'responsavel') {
-                filtered.sort((a, b) => a.responsible.localeCompare(b.responsible));
             }
 
-            displayTasks(filtered);
-        }
-
-        function displayTasks(tasks) {
-            const tasksList = document.getElementById('tasksList');
-
-            if (tasks.length === 0) {
-                tasksList.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">📋</div>
-                        <div class="empty-text">Nenhuma tarefa encontrada</div>
-                    </div>
-                `;
-            } else {
-                tasksList.innerHTML = `<div class="items-list">${tasks.map(task => {
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    const deadline = task.deadline ? new Date(task.deadline + 'T00:00:00') : null;
-                    const daysUntilDeadline = deadline ? Math.floor((deadline - today) / (1000 * 60 * 60 * 24)) : null;
-                    
-                    let deadlineClass = '';
-                    let deadlineDisplay = '';
-                    
-                    if (deadline) {
-                        if (daysUntilDeadline < 0) {
-                            deadlineClass = 'date-overdue';
-                            deadlineDisplay = `⏳ Atrasado por ${Math.abs(daysUntilDeadline)} dias`;
-                        } else if (daysUntilDeadline <= 2) {
-                            deadlineClass = 'date-warning';
-                            deadlineDisplay = `⏳ Faltam ${daysUntilDeadline} dias`;
-                        } else {
-                            deadlineDisplay = `⏳ Entrega: ${formatDate(task.deadline)}`;
-                        }
-                    }
-
-                    return `
-                        <div class="item-card status-${task.status}">
-                            <div class="item-content">
-                                <div class="item-title">${task.description}</div>
-                                <div class="item-meta">
-                                    <span class="item-badge badge-${task.status}">${getStatusLabel(task.status)}</span>
-                                    <span class="item-badge badge-phase">${getPhaseLabel(task.phase)}</span>
-                                    ${task.responsible ? `<span class="item-responsible">👤 ${task.responsible}</span>` : ''}
-                                </div>
-                                <div class="item-dates">
-                                    ${task.date ? `<span>📅 ${formatDate(task.date)}</span>` : ''}
-                                    ${deadlineDisplay ? `<span class="${deadlineClass}">${deadlineDisplay}</span>` : ''}
-                                </div>
-                                ${task.notes ? `<div class="item-description">${task.notes}</div>` : ''}
-                            </div>
-                            <div class="item-actions">
-                                <button class="btn-icon" onclick="editTask(${task.id})" title="Editar" ${isViewOnly ? 'disabled' : ''}>✏️</button>
-                                <button class="btn-icon btn-delete" onclick="deleteTask(${task.id})" title="Deletar" ${isViewOnly ? 'disabled' : ''}>🗑️</button>
-                            </div>
-                        </div>
-                    `;
-                }).join('')}</div>`;
-            }
-        }
-
-        function deleteTask(id) {
-            if (isViewOnly) {
-                alert('Você está em modo visualização.');
-                return;
-            }
-            if (confirm('Tem certeza que deseja deletar esta tarefa?')) {
-                let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
-                tasks = tasks.filter(t => t.id !== id);
-                localStorage.setItem('tasks', JSON.stringify(tasks));
-                loadTasks();
-                updateDashboard();
-            }
-        }
-
-        function editTask(id) {
-            if (isViewOnly) {
-                alert('Você está em modo visualização.');
-                return;
-            }
-            const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
-            const task = tasks.find(t => t.id === id);
-            if (task) {
-                editingTaskId = id;
-                document.getElementById('taskDescription').value = task.description;
-                document.getElementById('taskResponsible').value = task.responsible;
-                document.getElementById('taskPhase').value = task.phase;
-                document.getElementById('taskStatus').value = task.status;
-                document.getElementById('taskDate').value = task.date;
-                document.getElementById('taskDeadline').value = task.deadline;
-                document.getElementById('taskNotes').value = task.notes;
-
-                document.getElementById('taskModalTitle').textContent = 'Editar Tarefa';
-                document.getElementById('taskSubmitBtn').textContent = 'Atualizar Tarefa';
-                
-                openTaskModal(true);
-            }
-        }
-
-        function updateTasksInfo(tasks) {
-            const total = tasks.length;
-            const inProgress = tasks.filter(t => t.status === 'in-progress').length;
-            const completed = tasks.filter(t => t.status === 'completed').length;
-            document.getElementById('tasksInfo').textContent = `${total} total • ${inProgress} em andamento • ${completed} concluídas`;
-        }
-
-        function getStatusLabel(status) {
-            const labels = {
-                'pending': 'Pendente',
-                'in-progress': 'Em andamento',
-                'completed': 'Concluída'
-            };
-            return labels[status] || status;
-        }
-
-        function getPhaseLabel(phase) {
-            const labels = {
-                'planejamento': 'Planejamento',
-                'desenvolvimento': 'Desenvolvimento',
-                'testes': 'Testes',
-                'deploy': 'Deploy',
-                'outros': 'Outros'
-            };
-            return labels[phase] || phase;
-        }
-
-        // ===== ATAS DE REUNIÃO =====
-        let editingMinutesId = null;
-        
-        function openMinutesModal(isEditing = false) {
-            if (isViewOnly) {
-                alert('Você está em modo visualização. Faça login para editar.');
-                return;
-            }
-            if (!isEditing) {
-                editingMinutesId = null;
-                document.getElementById('minutesForm').reset();
-                document.getElementById('minutesModalTitle').textContent = 'Registrar Nova Ata';
-                document.getElementById('minutesSubmitBtn').textContent = 'Registrar Ata';
-                setTodayDate();
-            }
-            document.getElementById('minutesModal').classList.add('active');
-        }
-
-        function closeMinutesModal() {
-            document.getElementById('minutesModal').classList.remove('active');
-            editingMinutesId = null;
-        }
-
-        function saveMinutes(event) {
-            event.preventDefault();
-
-            const minutes = {
-                id: editingMinutesId || Date.now(),
-                date: document.getElementById('minutesDate').value,
-                participants: document.getElementById('minutesParticipants').value,
-                achievements: document.getElementById('minutesAchievements').value,
-                notes: document.getElementById('minutesNotes').value
-            };
-
-            let minutesList = JSON.parse(localStorage.getItem('minutes')) || [];
-            
-            if (editingMinutesId) {
-                // Atualizar ata existente
-                minutesList = minutesList.map(m => m.id === editingMinutesId ? minutes : m);
-            } else {
-                // Adicionar nova ata
-                minutesList.push(minutes);
-            }
-            
-            localStorage.setItem('minutes', JSON.stringify(minutesList));
-
-            closeMinutesModal();
-            loadMinutes();
-        }
-
-        function loadMinutes() {
-            const minutesList = JSON.parse(localStorage.getItem('minutes')) || [];
-            filterMinutes();
-            document.getElementById('minutesInfo').textContent = `${minutesList.length} atas registradas`;
-        }
-
-        function filterMinutes() {
-            const minutesList = JSON.parse(localStorage.getItem('minutes')) || [];
-            const searchTerm = document.getElementById('searchMinutes').value.toLowerCase();
-
-            const filtered = minutesList.filter(minutes => {
-                return minutes.achievements.toLowerCase().includes(searchTerm) ||
-                       minutes.participants.toLowerCase().includes(searchTerm) ||
-                       minutes.date.includes(searchTerm);
-            });
-
-            displayMinutes(filtered);
-        }
-
-        function displayMinutes(minutesList) {
-            const minutesContainer = document.getElementById('minutesList');
-
-            if (minutesList.length === 0) {
-                minutesContainer.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">📋</div>
-                        <div class="empty-text">Nenhuma ata encontrada</div>
-                    </div>
-                `;
-            } else {
-                minutesContainer.innerHTML = `<div class="items-list">${minutesList.map(minutes => `
-                    <div class="item-card">
-                        <div class="item-content">
-                            <div class="item-title">📅 ${formatDate(minutes.date)}</div>
-                            ${minutes.participants ? `<div class="item-description"><strong>Participantes:</strong> ${minutes.participants}</div>` : ''}
-                            <div class="item-description"><strong>ALINHAMENTOS</strong><br>${minutes.achievements}</div>
-                            ${minutes.notes ? `<div class="item-description"><strong>OBSERVAÇÕES</strong><br>${minutes.notes}</div>` : ''}
-                        </div>
-                        <div class="item-actions">
-                            <button class="btn-icon" onclick="editMinutes(${minutes.id})" title="Editar" ${isViewOnly ? 'disabled' : ''}>✏️</button>
-                            <button class="btn-icon btn-delete" onclick="deleteMinutes(${minutes.id})" title="Deletar" ${isViewOnly ? 'disabled' : ''}>🗑️</button>
-                        </div>
-                    </div>
-                `).join('')}</div>`;
-            }
-        }
-
-        function deleteMinutes(id) {
-            if (isViewOnly) {
-                alert('Você está em modo visualização.');
-                return;
-            }
-            if (confirm('Tem certeza que deseja deletar esta ata?')) {
-                let minutesList = JSON.parse(localStorage.getItem('minutes')) || [];
-                minutesList = minutesList.filter(m => m.id !== id);
-                localStorage.setItem('minutes', JSON.stringify(minutesList));
-                loadMinutes();
-            }
-        }
-
-        function editMinutes(id) {
-            if (isViewOnly) {
-                alert('Você está em modo visualização.');
-                return;
-            }
-            const minutesList = JSON.parse(localStorage.getItem('minutes')) || [];
-            const minutes = minutesList.find(m => m.id === id);
-            if (minutes) {
-                editingMinutesId = id;
-                document.getElementById('minutesDate').value = minutes.date;
-                document.getElementById('minutesParticipants').value = minutes.participants;
-                document.getElementById('minutesAchievements').value = minutes.achievements;
-                document.getElementById('minutesNotes').value = minutes.notes;
-
-                // Atualizar título do modal
-                document.getElementById('minutesModalTitle').textContent = 'Editar Ata';
-                document.getElementById('minutesSubmitBtn').textContent = 'Atualizar Ata';
-                
-                openMinutesModal(true);
-            }
-        }
-
-        // ===== TIMELINE =====
-        function displayTimeline() {
-            const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
-            const timelineContainer = document.getElementById('timelineContainer');
-
-            if (tasks.length === 0) {
-                timelineContainer.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">📅</div>
-                        <div class="empty-text">Nenhuma tarefa para exibir na timeline</div>
-                    </div>
-                `;
-            } else {
-                // Ordenar por data
-                const sorted = [...tasks].sort((a, b) => new Date(a.date) - new Date(b.date));
-                
-                timelineContainer.innerHTML = `
-                    <div class="timeline">
-                        ${sorted.map(task => `
-                            <div class="timeline-item status-${task.status}">
-                                <div class="timeline-content">
-                                    <div class="timeline-date">${formatDate(task.date)}</div>
-                                    <div class="timeline-title">${task.description}</div>
-                                    <div class="timeline-info">
-                                        ${getStatusLabel(task.status)} • ${getPhaseLabel(task.phase)}
-                                        ${task.responsible ? ` • 👤 ${task.responsible}` : ''}
-                                    </div>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                `;
-            }
-        }
-
-        // ===== DASHBOARD =====
-        function updateDashboard() {
-            const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
-            
-            const total = tasks.length;
-            const pending = tasks.filter(t => t.status === 'pending').length;
-            const inProgress = tasks.filter(t => t.status === 'in-progress').length;
-            const completed = tasks.filter(t => t.status === 'completed').length;
-
-            document.getElementById('statTotal').textContent = total;
-            document.getElementById('statPending').textContent = pending;
-            document.getElementById('statInProgress').textContent = inProgress;
-            document.getElementById('statCompleted').textContent = completed;
-
-            updateStatusChart(pending, inProgress, completed);
-            updatePhaseChart(tasks);
-        }
-
-        function updateStatusChart(pending, inProgress, completed) {
-            const ctx = document.getElementById('statusChart').getContext('2d');
-            
-            if (statusChart) {
-                statusChart.destroy();
+            for (const m of backup.minutes) {
+                await upsertMinutesToSupabase({
+                    id: m.id || crypto.randomUUID(),
+                    date: m.date || null,
+                    participants: m.participants || '',
+                    achievements: m.achievements || '',
+                    notes: m.notes || ''
+                });
             }
 
-            statusChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Pendente', 'Em Andamento', 'Concluída'],
-                    datasets: [{
-                        data: [pending, inProgress, completed],
-                        backgroundColor: ['#d97706', '#3b82f6', '#059669'],
-                        borderColor: '#ffffff',
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                font: { family: "'Inter', sans-serif", size: 12 },
-                                padding: 15,
-                                color: '#475569'
-                            }
-                        }
-                    }
+            alert('Backup restaurado com sucesso!');
+            await loadTasks();
+            await loadMinutes();
+            updateDashboard();
+        } catch (error) {
+            alert('Erro ao restaurar backup: ' + error.message);
+        }
+    };
+    reader.readAsText(file);
+}
+
+// =========================
+// EXPORTAÇÕES (CSV/PDF) – usa cache
+// =========================
+function exportTasksToCSV() {
+    const tasks = tasksCache;
+    let csv = 'Tarefa,Responsável,Fase,Status,Data de Criação,Previsão de Entrega,Observações\n';
+
+    tasks.forEach(task => {
+        const row = [
+            `"${escapeCsv(task.description)}"`,
+            `"${escapeCsv(task.responsible)}"`,
+            `"${escapeCsv(getPhaseLabel(task.phase))}"`,
+            `"${escapeCsv(getStatusLabel(task.status))}"`,
+            formatDate(task.date),
+            formatDate(task.deadline),
+            `"${escapeCsv(task.notes)}"`
+        ].join(',');
+        csv += row + '\n';
+    });
+
+    downloadFile(csv, 'tarefas.csv', 'text/csv');
+}
+
+function exportTasksToPDF() {
+    const tasks = tasksCache;
+
+    let html = `
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; color: #333; }
+                h1 { color: #1e3a8a; text-align: center; margin-bottom: 30px; }
+                .task {
+                    border: 1px solid #e2e8f0;
+                    border-radius: 8px;
+                    padding: 15px;
+                    margin-bottom: 15px;
+                    background: #f8fafc;
                 }
-            });
-        }
-
-        function updatePhaseChart(tasks) {
-            const phases = {
-                'planejamento': 0,
-                'desenvolvimento': 0,
-                'testes': 0,
-                'deploy': 0,
-                'outros': 0
-            };
-
-            tasks.forEach(task => {
-                if (phases.hasOwnProperty(task.phase)) {
-                    phases[task.phase]++;
+                .task-title { font-size: 16px; font-weight: bold; color: #1e3a8a; margin-bottom: 8px; }
+                .task-meta {
+                    display: flex;
+                    gap: 15px;
+                    margin-bottom: 8px;
+                    font-size: 12px;
                 }
-            });
-
-            const ctx = document.getElementById('phaseChart').getContext('2d');
-            
-            if (phaseChart) {
-                phaseChart.destroy();
-            }
-
-            phaseChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['Planejamento', 'Desenvolvimento', 'Testes', 'Deploy', 'Outros'],
-                    datasets: [{
-                        label: 'Tarefas',
-                        data: [phases.planejamento, phases.desenvolvimento, phases.testes, phases.deploy, phases.outros],
-                        backgroundColor: '#3b82f6',
-                        borderColor: '#1e3a8a',
-                        borderWidth: 1,
-                        borderRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    indexAxis: 'y',
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    },
-                    scales: {
-                        x: {
-                            beginAtZero: true,
-                            ticks: {
-                                stepSize: 1
-                            }
-                        }
-                    }
+                .badge {
+                    padding: 4px 8px;
+                    border-radius: 4px;
+                    font-weight: bold;
                 }
-            });
-        }
+                .badge-pending { background: #fef3c7; color: #d97706; }
+                .badge-in-progress { background: #dbeafe; color: #1e3a8a; }
+                .badge-completed { background: #d1fae5; color: #059669; }
+                .task-info { font-size: 12px; color: #475569; margin-bottom: 8px; }
+                .task-notes {
+                    font-size: 12px;
+                    color: #475569;
+                    font-style: italic;
+                    padding: 8px;
+                    background: white;
+                    border-left: 3px solid #3b82f6;
+                    border-radius: 4px;
+                }
+                .footer {
+                    margin-top: 30px;
+                    padding-top: 15px;
+                    border-top: 1px solid #e2e8f0;
+                    font-size: 11px;
+                    color: #94a3b8;
+                    text-align: center;
+                }
+            </style>
+        </head>
+        <body>
+            <h1>📋 Relatório de Tarefas</h1>
+            <p style="text-align: center; color: #475569; margin-bottom: 20px;">
+                Sistema SESI Esporte - Acompanhamento de Implantação
+            </p>
+    `;
 
-        // ===== EXPORTAÇÃO =====
-        function exportTasksToCSV() {
-            const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
-            let csv = 'Tarefa,Responsável,Fase,Status,Data de Criação,Previsão de Entrega,Observações\n';
+    tasks.forEach(task => {
+        const statusClass = `badge-${task.status}`;
+        html += `
+            <div class="task">
+                <div class="task-title">${escapeHtml(task.description)}</div>
+                <div class="task-meta">
+                    <span class="badge ${statusClass}">${getStatusLabel(task.status)}</span>
+                    <span>${getPhaseLabel(task.phase)}</span>
+                    ${task.responsible ? `<span>👤 ${escapeHtml(task.responsible)}</span>` : ''}
+                </div>
+                <div class="task-info">
+                    📅 Criação: ${formatDate(task.date)}
+                    ${task.deadline ? `<br>⏳ Entrega: ${formatDate(task.deadline)}` : ''}
+                </div>
+                ${task.notes ? `<div class="task-notes">${escapeHtml(task.notes)}</div>` : ''}
+            </div>
+        `;
+    });
 
-            tasks.forEach(task => {
-                const row = [
-                    `"${task.description}"`,
-                    `"${task.responsible}"`,
-                    `"${getPhaseLabel(task.phase)}"`,
-                    `"${getStatusLabel(task.status)}"`,
-                    formatDate(task.date),
-                    formatDate(task.deadline),
-                    `"${task.notes}"`
-                ].join(',');
-                csv += row + '\n';
-            });
+    html += `
+            <div class="footer">
+                Gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}
+            </div>
+        </body>
+        </html>
+    `;
 
-            downloadFile(csv, 'tarefas.csv', 'text/csv');
-        }
+    const element = document.createElement('div');
+    element.innerHTML = html;
 
-        function exportTasksToPDF() {
-            const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
-            
-            let html = `
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                    <style>
-                        body { font-family: Arial, sans-serif; margin: 20px; color: #333; }
-                        h1 { color: #1e3a8a; text-align: center; margin-bottom: 30px; }
-                        .task { 
-                            border: 1px solid #e2e8f0; 
-                            border-radius: 8px; 
-                            padding: 15px; 
-                            margin-bottom: 15px;
-                            background: #f8fafc;
-                        }
-                        .task-title { font-size: 16px; font-weight: bold; color: #1e3a8a; margin-bottom: 8px; }
-                        .task-meta { 
-                            display: flex; 
-                            gap: 15px; 
-                            margin-bottom: 8px; 
-                            font-size: 12px;
-                        }
-                        .badge { 
-                            padding: 4px 8px; 
-                            border-radius: 4px; 
-                            font-weight: bold;
-                        }
-                        .badge-pending { background: #fef3c7; color: #d97706; }
-                        .badge-in-progress { background: #dbeafe; color: #1e3a8a; }
-                        .badge-completed { background: #d1fae5; color: #059669; }
-                        .task-info { font-size: 12px; color: #475569; margin-bottom: 8px; }
-                        .task-notes { 
-                            font-size: 12px; 
-                            color: #475569; 
-                            font-style: italic;
-                            padding: 8px;
-                            background: white;
-                            border-left: 3px solid #3b82f6;
-                            border-radius: 4px;
-                        }
-                        .footer { 
-                            margin-top: 30px; 
-                            padding-top: 15px; 
-                            border-top: 1px solid #e2e8f0; 
-                            font-size: 11px; 
-                            color: #94a3b8;
-                            text-align: center;
-                        }
-                    </style>
-                </head>
-                <body>
-                    <h1>📋 Relatório de Tarefas</h1>
-                    <p style="text-align: center; color: #475569; margin-bottom: 20px;">
-                        Sistema SESI Esporte - Acompanhamento de Implantação
-                    </p>
-            `;
+    const opt = {
+        margin: 10,
+        filename: 'tarefas.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+    };
 
-            tasks.forEach(task => {
-                const statusClass = `badge-${task.status}`;
-                html += `
-                    <div class="task">
-                        <div class="task-title">${task.description}</div>
-                        <div class="task-meta">
-                            <span class="badge ${statusClass}">${getStatusLabel(task.status)}</span>
-                            <span>${getPhaseLabel(task.phase)}</span>
-                            ${task.responsible ? `<span>👤 ${task.responsible}</span>` : ''}
-                        </div>
-                        <div class="task-info">
-                            📅 Criação: ${formatDate(task.date)}
-                            ${task.deadline ? `<br>⏳ Entrega: ${formatDate(task.deadline)}` : ''}
-                        </div>
-                        ${task.notes ? `<div class="task-notes">${task.notes}</div>` : ''}
+    html2pdf().set(opt).from(element).save();
+}
+
+function exportMinutesToCSV() {
+    const minutes = minutesCache;
+    let csv = 'Data,Participantes,Alinhamentos,Observações\n';
+
+    minutes.forEach(m => {
+        const row = [
+            formatDate(m.date),
+            `"${escapeCsv(m.participants)}"`,
+            `"${escapeCsv(m.achievements)}"`,
+            `"${escapeCsv(m.notes)}"`
+        ].join(',');
+        csv += row + '\n';
+    });
+
+    downloadFile(csv, 'atas.csv', 'text/csv');
+}
+
+function exportMinutesToPDF() {
+    const minutes = minutesCache;
+
+    let html = `
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; color: #333; }
+                h1 { color: #1e3a8a; text-align: center; margin-bottom: 30px; }
+                .minute {
+                    border: 1px solid #e2e8f0;
+                    border-radius: 8px;
+                    padding: 15px;
+                    margin-bottom: 15px;
+                    background: #f8fafc;
+                }
+                .minute-date {
+                    font-size: 14px;
+                    font-weight: bold;
+                    color: #1e3a8a;
+                    margin-bottom: 10px;
+                }
+                .minute-section { margin-bottom: 10px; font-size: 12px; }
+                .minute-label { font-weight: bold; color: #1e3a8a; margin-bottom: 4px; }
+                .minute-content {
+                    color: #475569;
+                    padding: 8px;
+                    background: white;
+                    border-radius: 4px;
+                    line-height: 1.5;
+                }
+                .footer {
+                    margin-top: 30px;
+                    padding-top: 15px;
+                    border-top: 1px solid #e2e8f0;
+                    font-size: 11px;
+                    color: #94a3b8;
+                    text-align: center;
+                }
+            </style>
+        </head>
+        <body>
+            <h1>📝 Atas de Reunião</h1>
+            <p style="text-align: center; color: #475569; margin-bottom: 20px;">
+                Sistema SESI Esporte - Acompanhamento de Implantação
+            </p>
+    `;
+
+    minutes.forEach(m => {
+        html += `
+            <div class="minute">
+                <div class="minute-date">📅 ${formatDate(m.date)}</div>
+                ${m.participants ? `
+                    <div class="minute-section">
+                        <div class="minute-label">Participantes:</div>
+                        <div class="minute-content">${escapeHtml(m.participants)}</div>
                     </div>
-                `;
-            });
-
-            html += `
-                    <div class="footer">
-                        Gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}
+                ` : ''}
+                <div class="minute-section">
+                    <div class="minute-label">Alinhamentos Realizados:</div>
+                    <div class="minute-content">${escapeHtml(m.achievements).replace(/\n/g,'<br>')}</div>
+                </div>
+                ${m.notes ? `
+                    <div class="minute-section">
+                        <div class="minute-label">Observações:</div>
+                        <div class="minute-content">${escapeHtml(m.notes).replace(/\n/g,'<br>')}</div>
                     </div>
-                </body>
-                </html>
-            `;
+                ` : ''}
+            </div>
+        `;
+    });
 
-            const element = document.createElement('div');
-            element.innerHTML = html;
-            
-            const opt = {
-                margin: 10,
-                filename: 'tarefas.pdf',
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2 },
-                jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
-            };
+    html += `
+            <div class="footer">
+                Gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}
+            </div>
+        </body>
+        </html>
+    `;
 
-            html2pdf().set(opt).from(element).save();
-        }
+    const element = document.createElement('div');
+    element.innerHTML = html;
 
-        function exportMinutesToCSV() {
-            const minutes = JSON.parse(localStorage.getItem('minutes')) || [];
-            let csv = 'Data,Participantes,Alinhamentos,Observações\n';
+    const opt = {
+        margin: 10,
+        filename: 'atas.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+    };
 
-            minutes.forEach(m => {
-                const row = [
-                    formatDate(m.date),
-                    `"${m.participants}"`,
-                    `"${m.achievements}"`,
-                    `"${m.notes}"`
-                ].join(',');
-                csv += row + '\n';
-            });
+    html2pdf().set(opt).from(element).save();
+}
 
-            downloadFile(csv, 'atas.csv', 'text/csv');
-        }
+// =========================
+// UTILITÁRIOS (mantém)
+// =========================
+function downloadFile(content, filename, type) {
+    const element = document.createElement('a');
+    element.setAttribute('href', 'data:' + type + ';charset=utf-8,' + encodeURIComponent(content));
+    element.setAttribute('download', filename);
+    element.style.display = 'none';
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+}
 
-        function exportMinutesToPDF() {
-            const minutes = JSON.parse(localStorage.getItem('minutes')) || [];
-            
-            let html = `
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                    <style>
-                        body { font-family: Arial, sans-serif; margin: 20px; color: #333; }
-                        h1 { color: #1e3a8a; text-align: center; margin-bottom: 30px; }
-                        .minute { 
-                            border: 1px solid #e2e8f0; 
-                            border-radius: 8px; 
-                            padding: 15px; 
-                            margin-bottom: 15px;
-                            background: #f8fafc;
-                        }
-                        .minute-date { 
-                            font-size: 14px; 
-                            font-weight: bold; 
-                            color: #1e3a8a; 
-                            margin-bottom: 10px;
-                        }
-                        .minute-section { 
-                            margin-bottom: 10px; 
-                            font-size: 12px;
-                        }
-                        .minute-label { 
-                            font-weight: bold; 
-                            color: #1e3a8a; 
-                            margin-bottom: 4px;
-                        }
-                        .minute-content { 
-                            color: #475569; 
-                            padding: 8px;
-                            background: white;
-                            border-radius: 4px;
-                            line-height: 1.5;
-                        }
-                        .footer { 
-                            margin-top: 30px; 
-                            padding-top: 15px; 
-                            border-top: 1px solid #e2e8f0; 
-                            font-size: 11px; 
-                            color: #94a3b8;
-                            text-align: center;
-                        }
-                    </style>
-                </head>
-                <body>
-                    <h1>📝 Atas de Reunião</h1>
-                    <p style="text-align: center; color: #475569; margin-bottom: 20px;">
-                        Sistema SESI Esporte - Acompanhamento de Implantação
-                    </p>
-            `;
+function formatDate(dateString) {
+    if (!dateString) return '';
+    const date = new Date(dateString + 'T00:00:00');
+    return date.toLocaleDateString('pt-BR');
+}
 
-            minutes.forEach(m => {
-                html += `
-                    <div class="minute">
-                        <div class="minute-date">📅 ${formatDate(m.date)}</div>
-                        ${m.participants ? `
-                            <div class="minute-section">
-                                <div class="minute-label">Participantes:</div>
-                                <div class="minute-content">${m.participants}</div>
-                            </div>
-                        ` : ''}
-                        <div class="minute-section">
-                            <div class="minute-label">Alinhamentos Realizados:</div>
-                            <div class="minute-content">${m.achievements}</div>
-                        </div>
-                        ${m.notes ? `
-                            <div class="minute-section">
-                                <div class="minute-label">Observações:</div>
-                                <div class="minute-content">${m.notes}</div>
-                            </div>
-                        ` : ''}
-                    </div>
-                `;
-            });
+function getStatusLabel(status) {
+    const labels = { 'pending': 'Pendente', 'in-progress': 'Em andamento', 'completed': 'Concluída' };
+    return labels[status] || status;
+}
 
-            html += `
-                    <div class="footer">
-                        Gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}
-                    </div>
-                </body>
-                </html>
-            `;
+function getPhaseLabel(phase) {
+    const labels = {
+        'planejamento': 'Planejamento',
+        'desenvolvimento': 'Desenvolvimento',
+        'testes': 'Testes',
+        'deploy': 'Deploy',
+        'outros': 'Outros'
+    };
+    return labels[phase] || phase;
+}
 
-            const element = document.createElement('div');
-            element.innerHTML = html;
-            
-            const opt = {
-                margin: 10,
-                filename: 'atas.pdf',
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2 },
-                jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
-            };
+function escapeHtml(str) {
+    return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
 
-            html2pdf().set(opt).from(element).save();
-        }
+function escapeCsv(str) {
+    return String(str ?? '').replace(/"/g, '""');
+}
 
-        function downloadFile(content, filename, type) {
-            const element = document.createElement('a');
-            element.setAttribute('href', 'data:' + type + ';charset=utf-8,' + encodeURIComponent(content));
-            element.setAttribute('download', filename);
-            element.style.display = 'none';
-            document.body.appendChild(element);
-            element.click();
-            document.body.removeChild(element);
-        }
+// Fechar modais ao clicar fora
+window.onclick = function(event) {
+    const taskModal = document.getElementById('taskModal');
+    const minutesModal = document.getElementById('minutesModal');
 
-        // ===== UTILITÁRIOS =====
-        function formatDate(dateString) {
-            if (!dateString) return '';
-            const date = new Date(dateString + 'T00:00:00');
-            return date.toLocaleDateString('pt-BR');
-        }
-
-        function updateTotalTasks(tasks) {
-            document.getElementById('totalTasks').textContent = tasks.length;
-        }
-
-        // Fechar modais ao clicar fora deles
-        window.onclick = function(event) {
-            const taskModal = document.getElementById('taskModal');
-            const minutesModal = document.getElementById('minutesModal');
-
-            if (event.target === taskModal) {
-                closeTaskModal();
-            }
-            if (event.target === minutesModal) {
-                closeMinutesModal();
-            }
-        };
-    </script>
+    if (event.target === taskModal) closeTaskModal();
+    if (event.target === minutesModal) closeMinutesModal();
+};
+</script>
 </body>
 </html>
