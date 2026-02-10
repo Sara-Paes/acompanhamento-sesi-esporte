@@ -1,0 +1,27 @@
+{
+  "name": "acompanhamento-sesi-esporte",
+  "version": "1.0.0",
+  "description": "Sistema de acompanhamento de implantação com gerenciamento de tarefas e atas",
+  "main": "index.html",
+  "scripts": {
+    "dev": "python3 -m http.server 8000",
+    "build": "echo 'No build needed for static site'",
+    "start": "npm run dev"
+  },
+  "keywords": [
+    "acompanhamento",
+    "tarefas",
+    "atas",
+    "implantação",
+    "sesi",
+    "esporte"
+  ],
+  "author": "SESI Esporte",
+  "license": "PROPRIETARY",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/seu-usuario/acompanhamento-sesi-esporte"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

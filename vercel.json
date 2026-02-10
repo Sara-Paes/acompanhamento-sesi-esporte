@@ -1,0 +1,20 @@
+{
+  "name": "acompanhamento-sesi-esporte",
+  "version": 2,
+  "public": true,
+  "builds": [
+    {
+      "src": "index.html",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ],
+  "env": {
+    "GOOGLE_DRIVE_FOLDER_ID": "@google_drive_folder_id"
+  }
+}
