@@ -1548,7 +1548,7 @@ async function upsertTaskToSupabase(task) {
         observacoes: task.notes
     };
 
-    let res = await supabaseClient.from('tarefa').upsert(payloadPT).select().single();
+    let res = await supabaseClient.from('tarefas').upsert(payloadPT).select().single();
     if (!res.error) return normalizeTaskRow(res.data);
 
     // Tentativa 2: colunas em EN (fallback).
@@ -1563,13 +1563,13 @@ async function upsertTaskToSupabase(task) {
         notes: task.notes
     };
 
-    res = await supabaseClient.from('tarefa').upsert(payloadEN).select().single();
+    res = await supabaseClient.from('tarefas').upsert(payloadEN).select().single();
     if (res.error) throw res.error;
     return normalizeTaskRow(res.data);
 }
 
 async function deleteTaskFromSupabase(id) {
-    const res = await supabaseClient.from('tarefa').delete().eq('id', id);
+    const res = await supabaseClient.from('tarefas').delete().eq('id', id);
     if (res.error) throw res.error;
 }
 
@@ -1611,7 +1611,7 @@ async function loadTasks() {
     // - Em view-only: precisa de policy SELECT liberada para public/anon.
     // - Em edição: SELECT também funciona, e a escrita fica segura via RLS.
     const { data, error } = await supabaseClient
-        .from('tarefa')
+        .from('tarefas')
         .select('*');
 
     if (error) {
