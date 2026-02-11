@@ -1232,7 +1232,7 @@
         const PROJECT_URL = "https://wgbdbazajqswszhzzodt.supabase.co";
         const ANON_KEY = "sb_publishable_u3dOv62_ppsPRrIk4U-plA_ENwWtk_4";
         
-        let supabase;
+        let supabaseClient = null;
         let statusChart, phaseChart;
         let isAuthenticated = false;
         let isViewOnly = false;
@@ -1247,10 +1247,10 @@
         document.addEventListener('DOMContentLoaded', async function() {
             try {
                 // 1. Inicializar Client
-                window.supabase = supabase = window.supabase.createClient(PROJECT_URL, ANON_KEY);
+                supabaseClient = window.supabase.createClient(PROJECT_URL, ANON_KEY);
                 
                 // 2. Verificar Sessão
-                const { data: { session } } = await supabase.auth.getSession();
+                const { data: { session } } = await supabaseClient.auth.getSession();
                 
                 if (session) {
                     isAuthenticated = true;
@@ -1283,7 +1283,7 @@
             errorDiv.textContent = 'Autenticando...';
             
             try {
-                const { data, error } = await supabase.auth.signInWithPassword({
+                const { data, error } = await supabaseClient.auth.signInWithPassword({
                     email: email,
                     password: password
                 });
@@ -1307,7 +1307,7 @@
         }
 
         async function logout() {
-            await supabase.auth.signOut();
+            await supabaseClient.auth.signOut();
             isAuthenticated = false;
             isViewOnly = false;
             sessionStorage.removeItem('view_only');
@@ -1346,7 +1346,7 @@
         // ===== TAREFAS (CRUD SUPABASE) =====
         async function loadTasks() {
             try {
-                const { data, error } = await supabase
+                const { data, error } = await supabaseClient
                     .from('tarefas')
                     .select('*')
                     .order('created_at', { ascending: false });
@@ -1392,12 +1392,12 @@
             try {
                 let result;
                 if (editingTaskId) {
-                    result = await supabase
+                    result = await supabaseClient
                         .from('tarefas')
                         .update(task)
                         .eq('id', editingTaskId);
                 } else {
-                    result = await supabase
+                    result = await supabaseClient
                         .from('tarefas')
                         .insert([task]);
                 }
@@ -1416,7 +1416,7 @@
             if (!confirm('Tem certeza que deseja excluir esta tarefa?')) return;
 
             try {
-                const { error } = await supabase
+                const { error } = await supabaseClient
                     .from('tarefas')
                     .delete()
                     .eq('id', id);
@@ -1431,7 +1431,7 @@
         // ===== ATAS (CRUD SUPABASE) =====
         async function loadMinutes() {
             try {
-                const { data, error } = await supabase
+                const { data, error } = await supabaseClient
                     .from('atas')
                     .select('*')
                     .order('data', { ascending: false });
@@ -1467,12 +1467,12 @@
             try {
                 let result;
                 if (editingMinutesId) {
-                    result = await supabase
+                    result = await supabaseClient
                         .from('atas')
                         .update(minute)
                         .eq('id', editingMinutesId);
                 } else {
-                    result = await supabase
+                    result = await supabaseClient
                         .from('atas')
                         .insert([minute]);
                 }
@@ -1491,7 +1491,7 @@
             if (!confirm('Deseja excluir esta ata?')) return;
 
             try {
-                const { error } = await supabase
+                const { error } = await supabaseClient
                     .from('atas')
                     .delete()
                     .eq('id', id);
@@ -1558,12 +1558,12 @@
                     }));
 
                     if (tasksToInsert.length > 0) {
-                        const { error: tErr } = await supabase.from('tarefas').insert(tasksToInsert);
+                        const { error: tErr } = await supabaseClient.from('tarefas').insert(tasksToInsert);
                         if (tErr) throw tErr;
                     }
 
                     if (minutesToInsert.length > 0) {
-                        const { error: mErr } = await supabase.from('atas').insert(minutesToInsert);
+                        const { error: mErr } = await supabaseClient.from('atas').insert(minutesToInsert);
                         if (mErr) throw mErr;
                     }
 
@@ -1696,7 +1696,7 @@
         function displayTasks(tasks) {
             const list = document.getElementById('tasksList');
             if (tasks.length === 0) {
-                list.innerHTML = '<div class="empty-state">Nenhuma tarefa encontrada</div>';
+                list.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">Nenhuma tarefa encontrada</div></div>';
                 return;
             }
 
@@ -1747,7 +1747,7 @@
         function displayMinutes(minutes) {
             const list = document.getElementById('minutesList');
             if (minutes.length === 0) {
-                list.innerHTML = '<div class="empty-state">Nenhuma ata encontrada</div>';
+                list.innerHTML = '<div class="empty-state"><div class="empty-icon">📝</div><div class="empty-text">Nenhuma ata encontrada</div></div>';
                 return;
             }
 
@@ -1769,7 +1769,7 @@
         function displayTimeline() {
             const container = document.getElementById('timelineContainer');
             if (tasksData.length === 0) {
-                container.innerHTML = '<div class="empty-state">Sem tarefas para timeline</div>';
+                container.innerHTML = '<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-text">Sem tarefas para timeline</div></div>';
                 return;
             }
             const sorted = [...tasksData].sort((a, b) => new Date(a.date) - new Date(b.date));
