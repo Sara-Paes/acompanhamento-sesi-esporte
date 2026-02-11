@@ -1696,7 +1696,7 @@
         function displayTasks(tasks) {
             const list = document.getElementById('tasksList');
             if (tasks.length === 0) {
-                list.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">Nenhuma tarefa encontrada</div></div>';
+                list.innerHTML = '<div class="empty-state">Nenhuma tarefa encontrada</div>';
                 return;
             }
 
@@ -1747,7 +1747,7 @@
         function displayMinutes(minutes) {
             const list = document.getElementById('minutesList');
             if (minutes.length === 0) {
-                list.innerHTML = '<div class="empty-state"><div class="empty-icon">📝</div><div class="empty-text">Nenhuma ata encontrada</div></div>';
+                list.innerHTML = '<div class="empty-state">Nenhuma ata encontrada</div>';
                 return;
             }
 
@@ -1769,7 +1769,7 @@
         function displayTimeline() {
             const container = document.getElementById('timelineContainer');
             if (tasksData.length === 0) {
-                container.innerHTML = '<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-text">Sem tarefas para timeline</div></div>';
+                container.innerHTML = '<div class="empty-state">Sem tarefas para timeline</div>';
                 return;
             }
             const sorted = [...tasksData].sort((a, b) => new Date(a.date) - new Date(b.date));
