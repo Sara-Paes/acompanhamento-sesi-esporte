@@ -1057,6 +1057,14 @@
             }
         }
     </style>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = "https://wgbdbazajqswszhzzodt.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_u3dOv62_ppsPRrIk4U-plA_ENwWtk_4";
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+</script>
+
 </head>
 <body>
     <!-- LOGIN SCREEN -->
@@ -1342,28 +1350,19 @@
         </div>
     </div>
 
-    
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-const supabaseClient = supabase.createClient(
-  "https://wgbdbazajqswszhzzodt.supabase.co",
-  "sb_publishable_u3dOv62_ppsPRrIk4U-plA_ENwWtk_4"
-);
-</script>
-
-<script>
+    <script>
         let statusChart, phaseChart;
         let isAuthenticated = false;
         let isViewOnly = false;
         let editingTaskId = null;
-        // LOGIN agora via Supabase Auth
+        const PASSWORD = "SESIESPORTEAPP";
         
         // ===== GOOGLE DRIVE SYNC =====
         function syncToGoogleDrive() {
             if (isViewOnly) return; // Não sincroniza em modo visualização
             
-            let tasks = [];
-            let minutes = [];
+            const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+            const minutes = JSON.parse(localStorage.getItem('minutes')) || [];
             
             const backup = {
                 timestamp: new Date().toISOString(),
@@ -1394,8 +1393,8 @@ const supabaseClient = supabase.createClient(
         }
         
         function exportBackup() {
-            let tasks = [];
-            let minutes = [];
+            const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+            const minutes = JSON.parse(localStorage.getItem('minutes')) || [];
             
             const backup = {
                 timestamp: new Date().toISOString(),
@@ -1448,33 +1447,24 @@ const supabaseClient = supabase.createClient(
         // ===== AUTENTICAÇÃO =====
         async function handleLogin(event) {
   event.preventDefault();
-
-  const email = document.getElementById("emailInput")?.value || document.getElementById("email")?.value;
-  const password = document.getElementById("passwordInput")?.value || document.getElementById("password")?.value;
-
-  const { error } = await supabaseClient.auth.signInWithPassword({
-    email,
-    password
-  });
-
+  const email = document.getElementById('emailInput').value;
+  const password = document.getElementById('passwordInput').value;
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
   if (error) {
-    document.getElementById("loginError").textContent = error.message;
+    document.getElementById('loginError').textContent = 'Erro no login.';
     return;
   }
-
   isAuthenticated = true;
   isViewOnly = false;
   showApp();
 }
         }
 
-        function viewOnly() {
-            isAuthenticated = true;
-            isViewOnly = true;
-            sessionStorage.setItem('auth_token', 'authenticated');
-            sessionStorage.setItem('view_only', 'true');
-            showApp();
-        }
+        async function viewOnly() {
+  isAuthenticated = true;
+  isViewOnly = true;
+  showApp();
+}
 
         function checkAuth() {
             const token = sessionStorage.getItem('auth_token');
@@ -1590,7 +1580,7 @@ const supabaseClient = supabase.createClient(
                 tasks.push(task);
             }
             
-            await supabaseClient.from('tarefas').insert([task]);
+            localStorage.setItem('tasks', JSON.stringify(tasks));
 
             closeTaskModal();
             loadTasks();
@@ -1598,14 +1588,14 @@ const supabaseClient = supabase.createClient(
         }
 
         function loadTasks() {
-            let tasks = [];
+            const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
             filterTasks();
             updateTasksInfo(tasks);
             updateTotalTasks(tasks);
         }
 
         function filterTasks() {
-            let tasks = [];
+            const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
             const searchTerm = document.getElementById('searchTasks').value.toLowerCase();
             const phaseFilter = document.getElementById('filterPhase').value;
             const sortBy = document.getElementById('sortTasks').value;
@@ -1703,7 +1693,7 @@ const supabaseClient = supabase.createClient(
             if (confirm('Tem certeza que deseja deletar esta tarefa?')) {
                 let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
                 tasks = tasks.filter(t => t.id !== id);
-                await supabaseClient.from('tarefas').insert([task]);
+                localStorage.setItem('tasks', JSON.stringify(tasks));
                 loadTasks();
                 updateDashboard();
             }
@@ -1714,7 +1704,7 @@ const supabaseClient = supabase.createClient(
                 alert('Você está em modo visualização.');
                 return;
             }
-            let tasks = [];
+            const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
             const task = tasks.find(t => t.id === id);
             if (task) {
                 editingTaskId = id;
@@ -1894,7 +1884,7 @@ const supabaseClient = supabase.createClient(
 
         // ===== TIMELINE =====
         function displayTimeline() {
-            let tasks = [];
+            const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
             const timelineContainer = document.getElementById('timelineContainer');
 
             if (tasks.length === 0) {
@@ -1929,7 +1919,7 @@ const supabaseClient = supabase.createClient(
 
         // ===== DASHBOARD =====
         function updateDashboard() {
-            let tasks = [];
+            const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
             
             const total = tasks.length;
             const pending = tasks.filter(t => t.status === 'pending').length;
@@ -2037,7 +2027,7 @@ const supabaseClient = supabase.createClient(
 
         // ===== EXPORTAÇÃO =====
         function exportTasksToCSV() {
-            let tasks = [];
+            const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
             let csv = 'Tarefa,Responsável,Fase,Status,Data de Criação,Previsão de Entrega,Observações\n';
 
             tasks.forEach(task => {
@@ -2057,7 +2047,7 @@ const supabaseClient = supabase.createClient(
         }
 
         function exportTasksToPDF() {
-            let tasks = [];
+            const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
             
             let html = `
                 <html>
@@ -2107,7 +2097,15 @@ const supabaseClient = supabase.createClient(
                             text-align: center;
                         }
                     </style>
-                </head>
+                
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = "https://wgbdbazajqswszhzzodt.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_u3dOv62_ppsPRrIk4U-plA_ENwWtk_4";
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+</script>
+
+</head>
                 <body>
                     <h1>📋 Relatório de Tarefas</h1>
                     <p style="text-align: center; color: #475569; margin-bottom: 20px;">
@@ -2157,7 +2155,7 @@ const supabaseClient = supabase.createClient(
         }
 
         function exportMinutesToCSV() {
-            let minutes = [];
+            const minutes = JSON.parse(localStorage.getItem('minutes')) || [];
             let csv = 'Data,Participantes,Alinhamentos,Observações\n';
 
             minutes.forEach(m => {
@@ -2174,7 +2172,7 @@ const supabaseClient = supabase.createClient(
         }
 
         function exportMinutesToPDF() {
-            let minutes = [];
+            const minutes = JSON.parse(localStorage.getItem('minutes')) || [];
             
             let html = `
                 <html>
@@ -2221,7 +2219,15 @@ const supabaseClient = supabase.createClient(
                             text-align: center;
                         }
                     </style>
-                </head>
+                
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = "https://wgbdbazajqswszhzzodt.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_u3dOv62_ppsPRrIk4U-plA_ENwWtk_4";
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+</script>
+
+</head>
                 <body>
                     <h1>📝 Atas de Reunião</h1>
                     <p style="text-align: center; color: #475569; margin-bottom: 20px;">
