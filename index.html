@@ -1306,7 +1306,7 @@
                             <option value="planejamento">Planejamento</option>
                             <option value="desenvolvimento">Desenvolvimento</option>
                             <option value="testes">Testes</option>
-                            <option value="deploy">Deploy</option>
+                            <option value="deploy">Implantação</option>
                             <option value="outros">Outros</option>
                         </select>
                         <select class="select-box" id="filterStatus" onchange="filterTasks()">
@@ -1451,7 +1451,7 @@
                             <option value="planejamento">Planejamento</option>
                             <option value="desenvolvimento">Desenvolvimento</option>
                             <option value="testes">Testes</option>
-                            <option value="deploy">Deploy</option>
+                            <option value="deploy">Implantação</option>
                             <option value="outros">Outros</option>
                         </select>
                     </div>
@@ -2118,7 +2118,7 @@
             phaseChart = new Chart(ctxP, {
                 type: 'bar',
                 data: {
-                    labels: ['Planejamento', 'Desenvolvimento', 'Testes', 'Deploy', 'Outros'],
+                    labels: ['Planejamento', 'Desenvolvimento', 'Testes', 'Implantação', 'Outros'],
                     datasets: [{ 
                         label: 'Tarefas', 
                         data: Object.values(phases), 
@@ -2330,7 +2330,7 @@
         // ===== UTILITÁRIOS =====
         function formatDate(ds) { if(!ds) return ''; const d = new Date(ds + 'T00:00:00'); return d.toLocaleDateString('pt-BR'); }
         function getStatusLabel(s) { const m = { 'pending': 'Pendente', 'in-progress': 'Em Andamento', 'completed': 'Concluída' }; return m[s] || s; }
-        function getPhaseLabel(p) { const m = { 'planejamento': 'Planejamento', 'desenvolvimento': 'Desenvolvimento', 'testes': 'Testes', 'deploy': 'Deploy', 'outros': 'Outros' }; return m[p] || p; }
+        function getPhaseLabel(p) { const m = { 'planejamento': 'Planejamento', 'desenvolvimento': 'Desenvolvimento', 'testes': 'Testes', 'deploy': 'Implantação', 'outros': 'Outros' }; return m[p] || p; }
         function updateTotalTasks(t) { document.getElementById('totalTasks').textContent = t.length; }
         function updateTasksInfo(t) {
             const p = t.filter(x => x.status === 'in-progress').length;
