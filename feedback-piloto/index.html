@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Feedback do Piloto – Sistema SESI Esporte</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg: #f4f4f6;
+      --card: #ffffff;
+      --card-soft: #fcfcfd;
+      --text: #16181d;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --border-strong: #d1d5db;
+      --primary: #d71920;
+      --primary-dark: #aa1218;
+      --primary-soft: rgba(215, 25, 32, 0.08);
+      --shadow-sm: 0 8px 24px rgba(15, 23, 42, 0.06);
+      --shadow-md: 0 18px 40px rgba(15, 23, 42, 0.08);
+      --radius-xl: 28px;
+      --radius-lg: 18px;
+      --radius-md: 14px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: "Inter", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(215, 25, 32, 0.05), transparent 24%),
+        radial-gradient(circle at bottom right, rgba(215, 25, 32, 0.06), transparent 20%),
+        var(--bg);
+      color: var(--text);
+      min-height: 100%;
+    }
+
+    .topbar {
+      background: linear-gradient(90deg, #1f1f22 0%, #2a2a2f 100%);
+      color: #fff;
+      padding: 22px 28px;
+      box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset;
+    }
+
+    .topbar-inner {
+      max-width: 1180px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      font-size: 1.7rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    .brand-sub {
+      font-size: 0.95rem;
+      color: rgba(255,255,255,0.78);
+      font-weight: 500;
+      margin-top: 4px;
+    }
+
+    .back-link {
+      color: #fff;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95rem;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.05);
+      padding: 12px 16px;
+      border-radius: 14px;
+      transition: all 0.2s ease;
+    }
+
+    .back-link:hover {
+      background: rgba(255,255,255,0.10);
+      border-color: rgba(255,255,255,0.18);
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 48px 20px 72px;
+    }
+
+    .hero-card {
+      background:
+        radial-gradient(circle at top left, rgba(215, 25, 32, 0.06), transparent 22%),
+        radial-gradient(circle at bottom right, rgba(215, 25, 32, 0.06), transparent 20%),
+        linear-gradient(180deg, #ffffff 0%, #fafafb 100%);
+      border: 1px solid rgba(255,255,255,0.75);
+      box-shadow: var(--shadow-md);
+      border-radius: 34px;
+      padding: 48px 28px 32px;
+      margin-bottom: 28px;
+      text-align: center;
+    }
+
+    .eyebrow {
+      display: inline-block;
+      font-size: 0.86rem;
+      text-transform: uppercase;
+      letter-spacing: 0.28em;
+      color: var(--primary);
+      font-weight: 800;
+      margin-bottom: 18px;
+    }
+
+    .hero-card h1 {
+      margin: 0 0 16px;
+      font-size: clamp(2.1rem, 5vw, 4.3rem);
+      line-height: 1.04;
+      letter-spacing: -0.05em;
+      font-weight: 800;
+    }
+
+    .hero-card p {
+      max-width: 840px;
+      margin: 0 auto;
+      font-size: 1.18rem;
+      line-height: 1.75;
+      color: #5e6676;
+    }
+
+    .form-card {
+      background: var(--card);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border);
+      padding: 28px;
+    }
+
+    .section-title {
+      font-size: 1.18rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin: 0 0 6px;
+    }
+
+    .section-subtitle {
+      font-size: 0.96rem;
+      color: var(--muted);
+      margin: 0 0 24px;
+      line-height: 1.6;
+    }
+
+    .section {
+      padding: 22px;
+      background: var(--card-soft);
+      border: 1px solid #eef0f3;
+      border-radius: 22px;
+    }
+
+    .section + .section {
+      margin-top: 20px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 18px;
+    }
+
+    .field {
+      grid-column: span 12;
+    }
+
+    .field.col-6 {
+      grid-column: span 6;
+    }
+
+    .field.col-4 {
+      grid-column: span 4;
+    }
+
+    .field label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #2a2f38;
+    }
+
+    .field .required::after {
+      content: " *";
+      color: var(--primary);
+    }
+
+    input[type="text"],
+    input[type="url"],
+    select,
+    textarea,
+    input[type="file"] {
+      width: 100%;
+      border: 1px solid var(--border-strong);
+      background: #fff;
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      font: inherit;
+      color: var(--text);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.08s ease;
+    }
+
+    textarea {
+      min-height: 150px;
+      resize: vertical;
+      line-height: 1.6;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      outline: none;
+      border-color: rgba(215, 25, 32, 0.55);
+      box-shadow: 0 0 0 4px rgba(215, 25, 32, 0.10);
+    }
+
+    .help {
+      margin-top: 8px;
+      font-size: 0.85rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .actions {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-top: 24px;
+    }
+
+    .btn-primary,
+    .btn-secondary {
+      appearance: none;
+      border: none;
+      font: inherit;
+      font-weight: 800;
+      border-radius: 18px;
+      padding: 15px 22px;
+      cursor: pointer;
+      transition: transform 0.12s ease, box-shadow 0.18s ease, background 0.18s ease;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-primary {
+      background: linear-gradient(180deg, #e31a22 0%, #c9151c 100%);
+      color: #fff;
+      box-shadow: 0 10px 28px rgba(215, 25, 32, 0.22);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 32px rgba(215, 25, 32, 0.28);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.7;
+      cursor: wait;
+      transform: none;
+    }
+
+    .btn-secondary {
+      background: #eff1f4;
+      color: #20252c;
+    }
+
+    .message {
+      margin-top: 18px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      font-weight: 600;
+      line-height: 1.55;
+      display: none;
+    }
+
+    .message.error {
+      display: block;
+      background: #fff1f2;
+      color: #9f1239;
+      border: 1px solid #fecdd3;
+    }
+
+    .success-card {
+      display: none;
+      background: var(--card);
+      border-radius: 30px;
+      box-shadow: var(--shadow-md);
+      border: 1px solid var(--border);
+      padding: 38px 28px;
+      text-align: center;
+    }
+
+    .success-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-size: 1.8rem;
+      font-weight: 800;
+      margin-bottom: 18px;
+    }
+
+    .success-card h2 {
+      margin: 0 0 10px;
+      font-size: 2rem;
+      letter-spacing: -0.03em;
+    }
+
+    .success-card p {
+      margin: 0 auto 24px;
+      max-width: 620px;
+      color: var(--muted);
+      line-height: 1.7;
+      font-size: 1.05rem;
+    }
+
+    .footer-note {
+      margin-top: 22px;
+      font-size: 0.84rem;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 860px) {
+      .field.col-6,
+      .field.col-4 {
+        grid-column: span 12;
+      }
+
+      .hero-card {
+        padding: 38px 20px 26px;
+      }
+
+      .form-card {
+        padding: 18px;
+      }
+
+      .section {
+        padding: 18px;
+      }
+
+      .brand {
+        font-size: 1.35rem;
+      }
+
+      .hero-card p {
+        font-size: 1.03rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div>
+        <div class="brand">Sistema SESI Esporte</div>
+        <div class="brand-sub">Feedback do Piloto</div>
+      </div>
+      <a class="back-link" href="../">Voltar ao sistema</a>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="hero-card">
+      <span class="eyebrow">Programa SESI Esporte</span>
+      <h1>Feedback do Piloto</h1>
+      <p>
+        Registre apontamentos, melhorias, dúvidas ou erros identificados durante o uso do sistema.
+      </p>
+    </section>
+
+    <section id="formWrapper" class="form-card">
+      <form id="feedbackForm" novalidate>
+        <div class="section">
+          <h2 class="section-title">Identificação</h2>
+          <p class="section-subtitle">
+            Preencha seus dados para registro do apontamento.
+          </p>
+
+          <div class="grid">
+            <div class="field col-6">
+              <label><span class="required">Nome do responsável</span></label>
+              <input type="text" id="nome_responsavel" maxlength="150" required />
+            </div>
+
+            <div class="field col-6">
+              <label><span class="required">Unidade</span></label>
+              <select id="unidade" required>
+                <option value="">Selecione</option>
+                <option>CAT Americana</option>
+                <option>CAT Araraquara</option>
+                <option>CAT Araras</option>
+                <option>CAT Araçatuba</option>
+                <option>CAT Barretos</option>
+                <option>CAT Bauru</option>
+                <option>CAT Bauru II (Paulo Skaf)</option>
+                <option>CAT Birigui</option>
+                <option>CAT Botucatu</option>
+                <option>CAT Campinas I</option>
+                <option>CAT Campinas II</option>
+                <option>CAT Cotia</option>
+                <option>CAT Cruzeiro</option>
+                <option>CAT Cubatão</option>
+                <option>CAT Diadema</option>
+                <option>CAT Ermelino Matarazzo</option>
+                <option>CAT Franca</option>
+                <option>CAT Guarulhos</option>
+                <option>CAT Indaiatuba</option>
+                <option>CAT Itapetininga</option>
+                <option>CAT Itu</option>
+                <option>CAT Jacareí</option>
+                <option>CAT Jaú</option>
+                <option>CAT Jundiaí</option>
+                <option>CAT Limeira</option>
+                <option>CAT Marília</option>
+                <option>CAT Matão</option>
+                <option>CAT Mauá</option>
+                <option>CAT Mogi das Cruzes</option>
+                <option>CAT Mogi Guaçu</option>
+                <option>CAT Osasco</option>
+                <option>CAT Ourinhos</option>
+                <option>CAT Piracicaba</option>
+                <option>CAT Presidente Epitácio</option>
+                <option>CAT Presidente Prudente</option>
+                <option>CAT Registro</option>
+                <option>CAT Ribeirão Preto</option>
+                <option>CAT Rio Claro</option>
+                <option>CAT Santa Bárbara D'Oeste</option>
+                <option>CAT Santana de Parnaíba</option>
+                <option>CAT Santo André</option>
+                <option>CAT Santos</option>
+                <option>CAT Sertãozinho</option>
+                <option>CAT Sorocaba</option>
+                <option>CAT Suzano</option>
+                <option>CAT Sumaré</option>
+                <option>CAT São Bernardo do Campo</option>
+                <option>CAT São Carlos</option>
+                <option>CAT São José do Rio Preto</option>
+                <option>CAT São José dos Campos</option>
+                <option>CAT Tatuí</option>
+                <option>CAT Taubaté</option>
+                <option>CAT Vila Leopoldina</option>
+                <option>CAT Votorantim</option>
+                <option>Complexo Cultural Itaquera</option>
+                <option>Sede</option>
+              </select>
+            </div>
+
+            <div class="field col-6">
+              <label><span class="required">Perfil do usuário</span></label>
+              <select id="perfil_usuario" required>
+                <option value="">Selecione</option>
+                <option>Gestor da unidade</option>
+                <option>Professor/Treinador</option>
+                <option>Sede</option>
+                <option>Outro</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2 class="section-title">Detalhamento do apontamento</h2>
+          <p class="section-subtitle">
+            Descreva o ocorrido com o maior nível de detalhe possível.
+          </p>
+
+          <div class="grid">
+            <div class="field col-4">
+              <label><span class="required">Tipo do apontamento</span></label>
+              <select id="tipo_apontamento" required>
+                <option value="">Selecione</option>
+                <option>Erro</option>
+                <option>Melhoria</option>
+                <option>Dúvida</option>
+                <option>Sugestão</option>
+                <option>Outro</option>
+              </select>
+            </div>
+
+            <div class="field col-4">
+              <label><span class="required">Funcionalidade</span></label>
+              <select id="funcionalidade" required>
+                <option value="">Selecione</option>
+                <option>Avalia</option>
+                <option>Chamada</option>
+                <option>Login</option>
+                <option>Planejamento Semestral</option>
+                <option>Outra</option>
+              </select>
+            </div>
+
+            <div class="field col-4">
+              <label><span class="required">Prioridade</span></label>
+              <select id="prioridade" required>
+                <option value="">Selecione</option>
+                <option>Baixa</option>
+                <option>Média</option>
+                <option>Alta</option>
+                <option>Crítica</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label><span class="required">Título</span></label>
+              <input type="text" id="titulo" maxlength="200" required />
+            </div>
+
+            <div class="field">
+              <label><span class="required">Descrição</span></label>
+              <textarea id="descricao" required></textarea>
+            </div>
+
+            <div class="field">
+              <label>Link relacionado</label>
+              <input type="url" id="link_relacionado" placeholder="https://..." />
+            </div>
+
+            <div class="field">
+              <label>Anexo</label>
+              <input
+                type="file"
+                id="anexo"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.webp"
+              />
+              <div class="help">
+                Tipos aceitos: PDF, documento, planilha e imagem. Limite máximo: 100 MB.
+              </div>
+            </div>
+          </div>
+
+          <div id="errorMessage" class="message error"></div>
+
+          <div class="actions">
+            <button id="submitButton" class="btn-primary" type="submit">
+              Enviar feedback
+            </button>
+            <a class="btn-secondary" href="../">Voltar</a>
+          </div>
+        </div>
+      </form>
+
+      <div class="footer-note">
+        Ao enviar, seu apontamento será registrado para análise da equipe responsável pelo piloto.
+      </div>
+    </section>
+
+    <section id="successCard" class="success-card">
+      <div class="success-badge">✓</div>
+      <h2>Feedback enviado com sucesso.</h2>
+      <p>
+        Obrigado por contribuir com o piloto do Sistema SESI Esporte.
+        Se desejar registrar outro apontamento, clique abaixo.
+      </p>
+      <div class="actions" style="justify-content:center;">
+        <button id="newFeedbackButton" class="btn-primary" type="button">
+          Registrar novo apontamento
+        </button>
+        <a class="btn-secondary" href="../">Voltar ao sistema</a>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const supabaseUrl = 'https://wgbdbazajqswszhzzodt.supabase.co';
+    const supabaseKey = 'sb_publishable_u3dOv62_ppsPRrIk4U-plA_ENwWtk_4';
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+    const feedbackForm = document.getElementById('feedbackForm');
+    const formWrapper = document.getElementById('formWrapper');
+    const successCard = document.getElementById('successCard');
+    const errorMessage = document.getElementById('errorMessage');
+    const submitButton = document.getElementById('submitButton');
+    const newFeedbackButton = document.getElementById('newFeedbackButton');
+
+    function showError(message) {
+      errorMessage.textContent = message;
+      errorMessage.style.display = 'block';
+      errorMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function clearError() {
+      errorMessage.textContent = '';
+      errorMessage.style.display = 'none';
+    }
+
+    function sanitizeFileName(fileName) {
+      return fileName
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9.\-_]/g, '_');
+    }
+
+    feedbackForm.addEventListener('submit', async function (event) {
+      event.preventDefault();
+      clearError();
+
+      const nome_responsavel = document.getElementById('nome_responsavel').value.trim();
+      const unidade = document.getElementById('unidade').value;
+      const perfil_usuario = document.getElementById('perfil_usuario').value;
+      const tipo_apontamento = document.getElementById('tipo_apontamento').value;
+      const funcionalidade = document.getElementById('funcionalidade').value;
+      const titulo = document.getElementById('titulo').value.trim();
+      const descricao = document.getElementById('descricao').value.trim();
+      const prioridade = document.getElementById('prioridade').value;
+      const link_relacionado = document.getElementById('link_relacionado').value.trim();
+      const anexoInput = document.getElementById('anexo');
+
+      if (
+        !nome_responsavel ||
+        !unidade ||
+        !perfil_usuario ||
+        !tipo_apontamento ||
+        !funcionalidade ||
+        !titulo ||
+        !descricao ||
+        !prioridade
+      ) {
+        showError('Preencha todos os campos obrigatórios antes de enviar.');
+        return;
+      }
+
+      if (link_relacionado) {
+        try {
+          new URL(link_relacionado);
+        } catch {
+          showError('O link relacionado precisa estar em um formato válido.');
+          return;
+        }
+      }
+
+      submitButton.disabled = true;
+      submitButton.textContent = 'Enviando...';
+
+      let anexo_url = null;
+      let anexo_nome = null;
+
+      try {
+        if (anexoInput.files.length > 0) {
+          const arquivo = anexoInput.files[0];
+
+          if (arquivo.size > 100 * 1024 * 1024) {
+            throw new Error('O anexo excede o limite máximo de 100 MB.');
+          }
+
+          const safeFileName = sanitizeFileName(arquivo.name);
+          const filePath = `public/${Date.now()}_${safeFileName}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from('feedback-piloto')
+            .upload(filePath, arquivo, {
+              cacheControl: '3600',
+              upsert: false
+            });
+
+          if (uploadError) {
+            throw new Error('Não foi possível enviar o anexo.');
+          }
+
+          anexo_url = filePath;
+          anexo_nome = arquivo.name;
+        }
+
+        const { error: insertError } = await supabase
+          .from('feedback_piloto')
+          .insert([
+            {
+              nome_responsavel,
+              unidade,
+              perfil_usuario,
+              tipo_apontamento,
+              funcionalidade,
+              titulo,
+              descricao,
+              prioridade,
+              link_relacionado: link_relacionado || null,
+              anexo_url,
+              anexo_nome,
+              status: 'novo',
+              origem: 'feedback_piloto'
+            }
+          ]);
+
+        if (insertError) {
+          throw new Error('Não foi possível registrar o feedback.');
+        }
+
+        formWrapper.style.display = 'none';
+        successCard.style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } catch (error) {
+        showError(error.message || 'Ocorreu um erro ao enviar o feedback.');
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Enviar feedback';
+      }
+    });
+
+    newFeedbackButton.addEventListener('click', function () {
+      feedbackForm.reset();
+      clearError();
+      successCard.style.display = 'none';
+      formWrapper.style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  </script>
+</body>
+</html>
