@@ -7,9 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
 
   <style>
     :root {
@@ -223,45 +221,72 @@
       box-shadow: 0 0 0 4px rgba(215, 25, 32, 0.10);
     }
 
-    .editor-wrapper {
+    .editor-shell {
       border: 1px solid var(--border-strong);
       border-radius: var(--radius-md);
       background: #fff;
       overflow: hidden;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
 
-    .editor-wrapper:focus-within {
+    .editor-shell:focus-within {
       border-color: rgba(215, 25, 32, 0.55);
       box-shadow: 0 0 0 4px rgba(215, 25, 32, 0.10);
     }
 
-    #toolbar {
-      border: none;
-      border-bottom: 1px solid var(--border);
+    .editor-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 10px 12px;
       background: #fafafb;
-      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
     }
 
-    #editor {
-      min-height: 180px;
-      font-size: 0.98rem;
-      color: var(--text);
+    .editor-btn {
+      border: 1px solid #d7dbe2;
       background: #fff;
+      color: #1f2937;
+      border-radius: 10px;
+      min-width: 38px;
+      height: 38px;
+      padding: 0 10px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
     }
 
-    #editor .ql-editor {
-      min-height: 180px;
-      line-height: 1.7;
+    .editor-btn:hover {
+      background: #f3f4f6;
+      border-color: #c7ccd5;
+    }
+
+    .editor-area {
+      min-height: 190px;
       padding: 16px;
+      outline: none;
+      line-height: 1.7;
+      color: var(--text);
+      font-size: 0.98rem;
     }
 
-    .ql-toolbar.ql-snow {
-      border: none !important;
+    .editor-area:empty:before {
+      content: attr(data-placeholder);
+      color: #9ca3af;
     }
 
-    .ql-container.ql-snow {
-      border: none !important;
-      font-family: "Inter", sans-serif;
+    .editor-area p {
+      margin: 0 0 12px;
+    }
+
+    .editor-area ul,
+    .editor-area ol {
+      margin: 0 0 12px 20px;
+      padding: 0;
     }
 
     .help {
@@ -570,25 +595,24 @@
 
             <div class="field">
               <label><span class="required">Descrição</span></label>
-              <div class="editor-wrapper">
-                <div id="toolbar">
-                  <span class="ql-formats">
-                    <button class="ql-bold" aria-label="Negrito"></button>
-                    <button class="ql-italic" aria-label="Itálico"></button>
-                    <button class="ql-underline" aria-label="Sublinhado"></button>
-                  </span>
-                  <span class="ql-formats">
-                    <button class="ql-list" value="ordered" aria-label="Lista numerada"></button>
-                    <button class="ql-list" value="bullet" aria-label="Lista com marcadores"></button>
-                  </span>
-                  <span class="ql-formats">
-                    <button class="ql-link" aria-label="Inserir link"></button>
-                  </span>
+              <div class="editor-shell">
+                <div class="editor-toolbar">
+                  <button class="editor-btn" type="button" data-command="bold" title="Negrito"><strong>B</strong></button>
+                  <button class="editor-btn" type="button" data-command="italic" title="Itálico"><em>I</em></button>
+                  <button class="editor-btn" type="button" data-command="underline" title="Sublinhado"><u>U</u></button>
+                  <button class="editor-btn" type="button" data-command="insertUnorderedList" title="Lista com marcadores">• Lista</button>
+                  <button class="editor-btn" type="button" data-command="insertOrderedList" title="Lista numerada">1. Lista</button>
+                  <button class="editor-btn" type="button" id="linkButton" title="Inserir link">Link</button>
                 </div>
-                <div id="editor"></div>
+                <div
+                  id="descricao_editor"
+                  class="editor-area"
+                  contenteditable="true"
+                  data-placeholder="Descreva o apontamento com detalhes, incluindo passos, contexto e comportamento observado."
+                ></div>
               </div>
               <div class="help">
-                Você pode usar negrito, itálico, listas e links.
+                Você pode usar negrito, itálico, sublinhado, listas e links.
               </div>
             </div>
 
@@ -653,14 +677,9 @@
     const errorMessage = document.getElementById('errorMessage');
     const submitButton = document.getElementById('submitButton');
     const newFeedbackButton = document.getElementById('newFeedbackButton');
-
-    const quill = new Quill('#editor', {
-      theme: 'snow',
-      modules: {
-        toolbar: '#toolbar'
-      },
-      placeholder: 'Descreva o apontamento com detalhes, incluindo passos, contexto e comportamento observado.'
-    });
+    const descricaoEditor = document.getElementById('descricao_editor');
+    const toolbarButtons = document.querySelectorAll('.editor-btn[data-command]');
+    const linkButton = document.getElementById('linkButton');
 
     function showError(message) {
       errorMessage.textContent = message;
@@ -680,11 +699,43 @@
         .replace(/[^a-zA-Z0-9.\-_]/g, '_');
     }
 
-    function editorIsEmpty(html) {
-      const plainText = quill.getText().trim();
-      const cleanedHtml = html.replace(/<(.|\n)*?>/g, '').trim();
-      return !plainText && !cleanedHtml;
+    function editorIsEmpty() {
+      const text = descricaoEditor.innerText.replace(/\u00A0/g, ' ').trim();
+      const html = descricaoEditor.innerHTML
+        .replace(/<br>/gi, '')
+        .replace(/<div><br><\/div>/gi, '')
+        .replace(/&nbsp;/gi, '')
+        .trim();
+      return !text && !html;
     }
+
+    function focusEditor() {
+      descricaoEditor.focus();
+    }
+
+    toolbarButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        const command = button.getAttribute('data-command');
+        focusEditor();
+        document.execCommand(command, false, null);
+      });
+    });
+
+    linkButton.addEventListener('click', () => {
+      focusEditor();
+      const url = window.prompt('Digite a URL do link:');
+      if (!url) return;
+
+      try {
+        new URL(url);
+      } catch {
+        showError('O link inserido no editor precisa estar em um formato válido.');
+        return;
+      }
+
+      document.execCommand('createLink', false, url);
+      clearError();
+    });
 
     feedbackForm.addEventListener('submit', async function (event) {
       event.preventDefault();
@@ -696,7 +747,7 @@
       const tipo_apontamento = document.getElementById('tipo_apontamento').value;
       const funcionalidade = document.getElementById('funcionalidade').value;
       const titulo = document.getElementById('titulo').value.trim();
-      const descricao = quill.root.innerHTML.trim();
+      const descricao = descricaoEditor.innerHTML.trim();
       const prioridade = document.getElementById('prioridade').value;
       const link_relacionado = document.getElementById('link_relacionado').value.trim();
       const anexoInput = document.getElementById('anexo');
@@ -709,7 +760,7 @@
         !funcionalidade ||
         !titulo ||
         !prioridade ||
-        editorIsEmpty(descricao)
+        editorIsEmpty()
       ) {
         showError('Preencha todos os campos obrigatórios antes de enviar.');
         return;
@@ -793,7 +844,7 @@
 
     newFeedbackButton.addEventListener('click', function () {
       feedbackForm.reset();
-      quill.setContents([]);
+      descricaoEditor.innerHTML = '';
       clearError();
       successCard.style.display = 'none';
       formWrapper.style.display = 'block';
