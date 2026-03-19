@@ -1,0 +1,2696 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema SESI Esporte - Acompanhamento de Implantação</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #f2f3f5;
+            --panel: rgba(255,255,255,.92);
+            --panel-strong: #ffffff;
+            --text-primary: #1f1f1f;
+            --text-secondary: #6f7278;
+            --text-tertiary: #8b9097;
+            --border: #dadde2;
+            --line-soft: #ebecef;
+            --brand: #e30613;
+            --brand-dark: #b80b16;
+            --nav-dark: rgba(34,34,34,.96);
+            --primary: #232427;
+            --success: #188b5a;
+            --success-light: #eaf8f1;
+            --warning: #c9891a;
+            --warning-light: #fbf2da;
+            --info: #6f7884;
+            --info-light: #eef1f5;
+            --error: #c63b3b;
+            --error-light: #fdebec;
+            --shadow-sm: 0 6px 18px rgba(17,17,17,.04);
+            --shadow-md: 0 12px 28px rgba(17,17,17,.06);
+            --shadow-lg: 0 18px 40px rgba(17,17,17,.09);
+            --radius-sm: 12px;
+            --radius-md: 18px;
+            --radius-lg: 24px;
+            --radius-xl: 32px;
+        }
+
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(180deg, #f7f7f8 0%, var(--bg) 100%);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .login-screen {
+            display: flex; align-items: center; justify-content: center; min-height: 100vh;
+            background: linear-gradient(180deg, #2b2b2b 0%, #1d1d1f 100%);
+            padding: 20px;
+        }
+        .login-card {
+            width: min(430px, 100%);
+            background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(255,255,255,.95));
+            padding: 40px 34px;
+            border-radius: 28px;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid rgba(255,255,255,.95);
+            text-align: center;
+            animation: slideUp .35s ease-out;
+        }
+        @keyframes slideUp { from { opacity:0; transform: translateY(18px);} to {opacity:1; transform:translateY(0);} }
+        .login-card h1 {
+            font-family: 'Poppins', sans-serif; font-size: 2rem; font-weight: 700;
+            color: var(--primary); margin-bottom: 8px; letter-spacing: -.03em;
+        }
+        .login-card p { color: var(--text-secondary); margin-bottom: 28px; font-size: .96rem; }
+        .login-form { display: flex; flex-direction: column; gap: 14px; }
+        .login-form input, .form-group input, .form-group select, .form-group textarea,
+        .search-box input, .select-box {
+            width: 100%; padding: 13px 14px; border: 1px solid var(--border);
+            border-radius: 14px; font: inherit; background: #fff; color: var(--text-primary);
+            transition: border-color .2s ease, box-shadow .2s ease, transform .12s ease;
+        }
+        .login-form input:focus, .form-group input:focus, .form-group select:focus,
+        .form-group textarea:focus, .search-box input:focus, .select-box:focus {
+            outline: none; border-color: rgba(227,6,19,.35);
+            box-shadow: 0 0 0 4px rgba(227,6,19,.08);
+        }
+        .login-btn, .btn-submit, .btn-nova {
+            border: 0; border-radius: 16px; padding: 14px 18px; cursor: pointer;
+            font: inherit; font-weight: 800; color: #fff;
+            background: linear-gradient(135deg, var(--brand), var(--brand-dark));
+            box-shadow: 0 10px 24px rgba(227,6,19,.18); transition: .2s ease;
+        }
+        .login-btn:hover, .btn-submit:hover, .btn-nova:hover:not(:disabled) { transform: translateY(-1px); }
+        .view-only-btn, .btn-export, .btn-secondary, .btn-inline {
+            border-radius: 14px; border: 1px solid var(--border); background: #f4f5f7;
+            color: #2b2b2b; font-weight: 800; padding: 12px 14px; cursor: pointer;
+            transition: .2s ease; text-decoration: none; display: inline-flex; align-items: center; justify-content: center;
+        }
+        .view-only-btn:hover, .btn-export:hover, .btn-secondary:hover, .btn-inline:hover:not(:disabled) {
+            background: #eceef1; transform: translateY(-1px);
+        }
+        .login-error { color: var(--error); font-size: .84rem; margin-top: 10px; font-weight: 700; }
+        .auth-badge {
+            position: fixed; top: 10px; right: 18px; background: #fff; color: var(--success);
+            padding: 10px 16px; border-radius: 999px; font-size: .76rem; font-weight: 800;
+            z-index: 2000; border: 1px solid #dfe4ea; box-shadow: var(--shadow-sm);
+            max-width: 180px; text-align: center;
+        }
+        .auth-badge.view-only { color: #6f7884; }
+
+        header {
+            position: sticky; top: 0; z-index: 1000; backdrop-filter: blur(12px);
+            background: var(--nav-dark); border-bottom: 1px solid rgba(255,255,255,.06);
+        }
+        .header-content {
+            max-width: 1380px; margin: 0 auto; padding: 14px 22px;
+            display: flex; justify-content: space-between; align-items: center; gap: 18px; flex-wrap: wrap;
+        }
+        .header-left h1 {
+            font-family: 'Poppins', sans-serif; font-size: 1.08rem; font-weight: 700;
+            color: #fff; letter-spacing: -.02em; margin: 0;
+        }
+        .header-left p {
+            color: rgba(255,255,255,.62); font-size: .76rem; text-transform: uppercase;
+            letter-spacing: .12em; font-weight: 700; margin-top: 4px;
+        }
+        .header-right { display:flex; align-items:center; gap:12px; flex-wrap: wrap; padding-right: 170px; }
+        .header-stats {
+            text-align: center; min-width: 126px; padding: 12px 18px; border-radius: 18px;
+            background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+            border: 1px solid rgba(255,255,255,.08);
+        }
+        .total-tasks {
+            font-family:'Poppins', sans-serif; font-size: 2rem; font-weight: 800; color: #fff; line-height:1;
+        }
+        .total-label {
+            margin-top: 6px; font-size: .7rem; font-weight: 800; color: rgba(255,255,255,.66);
+            text-transform: uppercase; letter-spacing: .12em;
+        }
+        .btn-header {
+            padding: 12px 16px; border-radius: 14px; border: 1px solid rgba(255,255,255,.08);
+            background: rgba(255,255,255,.05); color: #fff; font-size: .84rem; font-weight: 800;
+            cursor: pointer; transition: .2s ease;
+        }
+        .btn-header:hover { background: rgba(255,255,255,.10); transform: translateY(-1px); }
+        .btn-logout {
+            background: #fff; color: var(--error); border-color: rgba(198,59,59,.25);
+        }
+        .btn-logout:hover { background: #fff5f5; }
+
+        .container { max-width: 1380px; margin: 0 auto; padding: 28px 22px 42px; }
+        .tabs {
+            margin-bottom: 22px; padding: 8px; border-radius: 22px; background: rgba(255,255,255,.72);
+            border: 1px solid rgba(255,255,255,.9); box-shadow: var(--shadow-sm);
+        }
+        .tabs-container { display:flex; gap: 8px; flex-wrap: wrap; }
+        .tab {
+            border: 0; background: transparent; color: #50545b; cursor: pointer;
+            padding: 12px 16px; border-radius: 14px; font-size: .94rem; font-weight: 800;
+            transition: .22s ease; white-space: nowrap;
+        }
+        .tab:hover { background: rgba(34,34,34,.05); color: #1f1f1f; }
+        .tab.active {
+            background: linear-gradient(135deg, rgba(181,42,52,.22), rgba(143,31,40,.08));
+            color: #2b2b2b; box-shadow: inset 0 0 0 1px rgba(181,42,52,.10);
+        }
+        .tab-content { display:none; animation: fade .25s ease; }
+        .tab-content.active { display:block; }
+        @keyframes fade { from {opacity:0; transform: translateY(8px);} to {opacity:1; transform: translateY(0);} }
+
+        .section, .chart-card, .modal-content {
+            background: var(--panel); border: 1px solid #e4e6ea; box-shadow: var(--shadow-sm); border-radius: var(--radius-lg);
+        }
+        .section { padding: 24px; margin-bottom: 22px; }
+        .section-header {
+            display:flex; justify-content: space-between; align-items: end; gap: 18px;
+            margin-bottom: 24px; flex-wrap: wrap;
+        }
+        .section-title-group { display:flex; flex-direction:column; gap:6px; }
+        .section-title {
+            font-family:'Poppins', sans-serif; font-size: 1.6rem; font-weight: 700; color: #222;
+            letter-spacing: -.03em; display:flex; align-items:center; gap: 10px;
+        }
+        .section-icon { display:none; }
+        .section-info { font-size: .86rem; color: var(--text-secondary); font-weight: 700; }
+
+        .controls {
+            display:grid; grid-template-columns: minmax(220px,1fr) repeat(auto-fit,minmax(160px,auto));
+            gap: 12px; margin-bottom: 22px; align-items: center;
+        }
+        .search-box { position: relative; }
+        .search-icon { display:none; }
+        .search-box input { padding-left: 14px; }
+
+        .items-list { display:grid; gap: 14px; }
+        .item-card {
+            position: relative; overflow:hidden; display:flex; justify-content:space-between; align-items:flex-start; gap: 16px;
+            background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(249,249,250,.96));
+            border: 1px solid #e2e4e8; border-radius: 20px; padding: 18px 18px 18px 22px;
+            box-shadow: 0 6px 18px rgba(17,17,17,.04); transition: .22s ease;
+        }
+        .item-card::before {
+            content:''; position:absolute; left:0; top:0; bottom:0; width:6px; border-radius:20px 0 0 20px;
+            background: linear-gradient(180deg, #7b818a, #949aa3);
+        }
+        .item-card.status-pending::before { background: linear-gradient(180deg, #F17950, #E46C43); }
+        .item-card.status-in-progress::before { background: linear-gradient(180deg, #78517C, #66446A); }
+        .item-card.status-completed::before { background: linear-gradient(180deg, #83D1C4, #6EC0B1); }
+        .item-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+        .item-content { flex: 1; min-width:0; }
+        .item-title {
+            font-family:'Poppins', sans-serif; font-size: 1.03rem; font-weight: 700; color:#212225;
+            margin-bottom: 12px; letter-spacing: -.02em;
+        }
+        .item-meta, .item-dates {
+            display:flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; align-items:center;
+        }
+        .item-badge, .item-responsible {
+            display:inline-flex; align-items:center; padding: 7px 11px; border-radius: 999px;
+            font-size: .74rem; font-weight: 800; border: 1px solid #e1e4e8; background: #f6f6f7; color:#4e545b;
+            text-transform: uppercase; letter-spacing: .02em;
+        }
+        .badge-pending { background: rgba(241,121,80,.14); color: #B75A3B; border-color: rgba(241,121,80,.22); }
+        .badge-in-progress { background: rgba(120,81,124,.14); color: #6B486E; border-color: rgba(120,81,124,.22); }
+        .badge-completed { background: rgba(131,209,196,.18); color: #4E9389; border-color: rgba(131,209,196,.25); }
+        .badge-phase { background: #f6f6f7; color:#5d7085; }
+        .item-dates { color: var(--text-secondary); font-size: .83rem; font-weight: 600; }
+        .date-warning { color: var(--warning); font-weight: 800; }
+        .date-overdue { color: var(--error); font-weight: 800; }
+        .item-description {
+            background: linear-gradient(180deg, rgba(248,248,249,.98), rgba(255,255,255,.98));
+            border: 1px solid #e2e4e8; border-radius: 16px; padding: 14px 16px;
+            color: #5d6572; font-size: .9rem; line-height: 1.65;
+        }
+        .item-actions { display:flex; flex-direction: column; gap: 10px; }
+        .btn-icon {
+            min-width: 82px; height: 40px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--border); background:#fff;
+            display:flex; align-items:center; justify-content:center; cursor:pointer; transition:.2s ease; font-size:.78rem; font-weight:700;
+        }
+        .btn-icon:hover:not(:disabled) { background:#f3f4f6; transform: translateY(-1px); }
+        .btn-icon.btn-delete:hover:not(:disabled) { background:#fff5f5; border-color:#f2c6ca; color:var(--error); }
+        .btn-icon:disabled, .btn-inline:disabled, .btn-nova:disabled { opacity:.5; cursor:not-allowed; }
+
+        .feedback-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top: 14px; }
+        .btn-inline { padding: 9px 12px; font-size: .79rem; }
+        .btn-inline.danger:hover:not(:disabled) { background: #fff5f5; border-color: #f2c6ca; color: var(--error); }
+
+        .stats-grid, .dashboard-grid {
+            display:grid; gap: 16px;
+        }
+        .stats-grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 22px; }
+        .dashboard-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+        .chart-card { padding: 24px; }
+        .chart-card h3 { font-family:'Poppins', sans-serif; font-size: 1.05rem; font-weight: 700; color:#232427; letter-spacing:-.02em; margin-bottom: 18px; }
+        .stat-card {
+            position: relative; overflow:hidden; border-radius: 22px; padding: 20px;
+            border: 1px solid #e2e4e8; box-shadow: var(--shadow-sm);
+            background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(249,249,250,.96));
+        }
+        .stat-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:#d9dee5; }
+        .stat-card::after { content:''; position:absolute; right:-18px; bottom:-18px; width:90px; height:90px; background:radial-gradient(circle, rgba(160,138,109,.10), transparent 70%); }
+        .stat-card.pending::before { background:#F17950; }
+        .stat-card.in-progress::before { background:#78517C; }
+        .stat-card.completed::before { background:#83D1C4; }
+        .stat-card.total::before { background:#cad3dd; }
+        .stat-number { font-family:'Poppins', sans-serif; font-size: 2.1rem; font-weight:800; color:#2a2a2a; line-height:1; position:relative; z-index:1; }
+        .stat-label { margin-top: 8px; font-size: .78rem; color: var(--text-secondary); font-weight: 800; text-transform: uppercase; letter-spacing: .12em; position:relative; z-index:1; }
+        .dashboard-grid { grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
+        .chart-card { padding: 20px; border-radius: 22px; }
+        .chart-card h3 { font-family:'Poppins', sans-serif; font-size: 1.05rem; color:#2b2b2b; margin-bottom: 16px; }
+        .chart-container { height: 320px; position: relative; }
+
+
+        .home-hero {
+            position: relative;
+            overflow: hidden;
+            padding: 76px 48px 66px;
+            border-radius: 32px;
+            background:
+                radial-gradient(circle at top left, rgba(227,6,19,.06), transparent 22%),
+                radial-gradient(circle at bottom right, rgba(227,6,19,.08), transparent 24%),
+                linear-gradient(180deg, rgba(255,255,255,.98), rgba(250,250,251,.96));
+            border: 1px solid #e4e6ea;
+            box-shadow: var(--shadow-sm);
+            text-align: center;
+            margin-bottom: 18px;
+        }
+        .home-eyebrow {
+            display: inline-block;
+            margin-bottom: 16px;
+            font-size: .88rem;
+            color: var(--brand);
+            text-transform: uppercase;
+            letter-spacing: .28em;
+            font-weight: 800;
+        }
+        .home-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: clamp(2rem, 4vw, 3.55rem);
+            line-height: 1.05;
+            letter-spacing: -.05em;
+            font-weight: 800;
+            color: #1f1f22;
+            margin-bottom: 14px;
+        }
+        .home-subtitle {
+            max-width: 920px;
+            margin: 0 auto;
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: #626a76;
+        }
+        .home-actions {
+            display: flex;
+            gap: 14px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 26px;
+        }
+        .home-btn-primary, .home-btn-secondary {
+            border: 0;
+            border-radius: 18px;
+            padding: 15px 24px;
+            font: inherit;
+            font-weight: 800;
+            cursor: pointer;
+            transition: .2s ease;
+            min-width: 210px;
+        }
+        .home-btn-primary {
+            background: linear-gradient(135deg, var(--brand), var(--brand-dark));
+            color: #fff;
+            box-shadow: 0 12px 26px rgba(227,6,19,.16);
+        }
+        .home-btn-primary:hover, .home-btn-secondary:hover {
+            transform: translateY(-1px);
+        }
+        .home-btn-secondary {
+            background: #eef0f3;
+            color: #25282d;
+            border: 1px solid #dfe3e8;
+        }
+        .home-quick-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+            margin-top: 18px;
+        }
+        .home-quick-card {
+            background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(249,249,250,.96));
+            border: 1px solid #e2e4e8;
+            border-radius: 22px;
+            padding: 24px 22px;
+            box-shadow: var(--shadow-sm);
+        }
+        .home-quick-card h3 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.14rem;
+            font-weight: 700;
+            letter-spacing: -.02em;
+            color: #202226;
+            margin-bottom: 10px;
+        }
+        .home-quick-card p {
+            font-size: .96rem;
+            line-height: 1.75;
+            color: #67707c;
+        }
+        .home-nav-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(260px, 320px));
+            gap: 14px;
+            margin: 26px auto 0;
+            justify-content: center;
+        }
+        .home-nav-card {
+            background: rgba(255,255,255,.92);
+            border: 1px solid #e3e6ea;
+            border-radius: 18px;
+            padding: 16px 14px;
+            text-align: center;
+            cursor: pointer;
+            transition: .2s ease;
+            box-shadow: var(--shadow-sm);
+        }
+        .home-nav-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        .home-nav-card.is-muted {
+            opacity: .7;
+        }
+
+        .home-nav-card.is-public {
+            border-color: rgba(227,6,19,.22);
+            background: linear-gradient(180deg, rgba(227,6,19,.06), rgba(255,255,255,.96));
+        }
+        .home-nav-card.is-public .home-nav-title {
+            color: #7c1119;
+        }
+        .home-nav-card.is-public .home-nav-subtitle {
+            color: #8e4a4f;
+        }
+        .home-nav-card.is-roadmap {
+            border-color: rgba(120,129,141,.18);
+            background: linear-gradient(180deg, rgba(120,129,141,.05), rgba(255,255,255,.96));
+        }
+        .home-nav-card.is-roadmap .home-nav-title {
+            color: #4e5661;
+        }
+        .home-nav-card.is-roadmap .home-nav-subtitle {
+            color: #7a838f;
+        }
+        .home-nav-title {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            letter-spacing: -.02em;
+            color: #25282d;
+        }
+        .home-nav-subtitle {
+            margin-top: 4px;
+            color: #78818d;
+            font-size: .8rem;
+            font-weight: 600;
+        }
+
+
+        .origin-filter {
+            min-width: 190px;
+        }
+        .badge-origin {
+            background: #f4f6f8;
+            color: #65707d;
+            border-color: #e1e5ea;
+        }
+        .kanban-column-header-actions {
+            display:flex;
+            align-items:center;
+            gap:10px;
+        }
+        .kanban-collapse-btn {
+            border: 1px solid #dfe3e8;
+            background: #ffffff;
+            color: #5a6470;
+            border-radius: 999px;
+            padding: 7px 12px;
+            font: inherit;
+            font-size: .78rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: .2s ease;
+        }
+        .kanban-collapse-btn:hover {
+            background: #f5f7f9;
+        }
+        .kanban-column.is-collapsed .kanban-column-body {
+            display: none;
+        }
+        .kanban-column.is-collapsed {
+            min-height: auto;
+        }
+.task-toolbar {
+            display:flex;
+            gap:12px;
+            flex-wrap:wrap;
+            align-items:center;
+        }
+        .view-toggle {
+            display:flex;
+            gap:8px;
+            align-items:center;
+            padding:6px;
+            background:#f4f5f7;
+            border:1px solid #e1e4e8;
+            border-radius:14px;
+        }
+        .view-toggle-btn {
+            border:0;
+            background:transparent;
+            color:#5b626d;
+            font-weight:800;
+            padding:10px 14px;
+            border-radius:10px;
+            cursor:pointer;
+            transition:.18s ease;
+        }
+        .view-toggle-btn.active {
+            background:#fff;
+            color:#222;
+            box-shadow: var(--shadow-sm);
+        }
+        .status-multi-filter {
+            display:flex;
+            gap:8px;
+            flex-wrap:wrap;
+            align-items:center;
+        }
+        .status-filter-chip {
+            position:relative;
+            display:inline-flex;
+            align-items:center;
+        }
+        .status-filter-chip input {
+            position:absolute;
+            opacity:0;
+            pointer-events:none;
+        }
+        .status-filter-chip span {
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            min-height:44px;
+            padding:0 14px;
+            border-radius:14px;
+            border:1px solid #e1e4e8;
+            background:#fff;
+            color:#4e545b;
+            font-size:.82rem;
+            font-weight:800;
+            cursor:pointer;
+            transition:.18s ease;
+        }
+        .status-filter-chip input:checked + span {
+            background:#f4f5f7;
+            border-color:#cfd5dd;
+            color:#232427;
+        }
+        .status-filter-chip.pending input:checked + span {
+            background:rgba(241,121,80,.14);
+            border-color:rgba(241,121,80,.22);
+            color:#B75A3B;
+        }
+        .status-filter-chip.in-progress input:checked + span {
+            background:rgba(120,81,124,.14);
+            border-color:rgba(120,81,124,.22);
+            color:#6B486E;
+        }
+        .status-filter-chip.completed input:checked + span {
+            background:rgba(131,209,196,.18);
+            border-color:rgba(131,209,196,.25);
+            color:#4E9389;
+        }
+        .task-details {
+            display:none;
+            margin-top:12px;
+        }
+        .task-details.is-open {
+            display:block;
+        }
+        .task-list-view .item-card {
+            padding:14px 18px 14px 20px;
+        }
+        .task-list-view .item-content {
+            display:grid;
+            grid-template-columns: minmax(320px, 1.8fr) minmax(120px, .7fr) minmax(120px, .7fr) auto;
+            gap:14px;
+            align-items:center;
+        }
+        .task-list-view .item-title {
+            margin-bottom:0;
+            font-size:.96rem;
+        }
+        .task-list-view .item-meta,
+        .task-list-view .item-dates {
+            margin-bottom:0;
+        }
+        .task-list-view .task-details {
+            grid-column: 1 / -1;
+        }
+        .task-list-view .item-actions {
+            flex-direction:row;
+            align-items:center;
+        }
+        .btn-inline.is-ghost {
+            background:#fff;
+        }
+        .kanban-column[data-status="pending"] {
+            background: linear-gradient(180deg, rgba(241,121,80,.07), rgba(255,255,255,.96));
+        }
+        .kanban-column[data-status="in-progress"] {
+            background: linear-gradient(180deg, rgba(120,81,124,.08), rgba(255,255,255,.96));
+        }
+        .kanban-column[data-status="completed"] {
+            background: linear-gradient(180deg, rgba(131,209,196,.10), rgba(255,255,255,.96));
+        }
+        .kanban-card {
+            padding:12px 14px 11px 16px;
+            border-radius:16px;
+        }
+        .kanban-card::before {
+            width:4px;
+        }
+        .kanban-card.status-pending {
+            background: #ffffff;
+        }
+        .kanban-card.status-in-progress {
+            background: #ffffff;
+        }
+        .kanban-card.status-completed {
+            background: #ffffff;
+        }
+        .kanban-card-title {
+            margin-bottom:8px;
+            font-size:.88rem;
+            line-height:1.45;
+            font-weight:700;
+        }
+        .kanban-card-date {
+            font-size:.74rem;
+            color:#6c7280;
+            font-weight:700;
+            letter-spacing:.01em;
+        }
+
+
+
+        .kanban-board {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 18px;
+            align-items: start;
+        }
+        .kanban-column {
+            background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(249,249,250,.96));
+            border: 1px solid #e2e4e8;
+            border-radius: 24px;
+            box-shadow: var(--shadow-sm);
+            min-height: 480px;
+            overflow: hidden;
+        }
+        .kanban-column-header {
+            padding: 18px 18px 14px;
+            border-bottom: 1px solid var(--line-soft);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+        .kanban-column-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #222;
+            letter-spacing: -.02em;
+        }
+        .kanban-column-count {
+            min-width: 32px;
+            height: 32px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .78rem;
+            font-weight: 800;
+            background: #f4f5f7;
+            color: #4b5563;
+            border: 1px solid #e1e4e8;
+        }
+        .kanban-column-body {
+            padding: 14px;
+            min-height: 420px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: linear-gradient(180deg, rgba(250,250,251,.7), rgba(255,255,255,.35));
+        }
+        .kanban-column.drag-over {
+            border-color: rgba(227,6,19,.18);
+            box-shadow: 0 0 0 4px rgba(227,6,19,.05), var(--shadow-md);
+        }
+        .kanban-card {
+            position: relative;
+            background: #fff;
+            border: 1px solid #e2e4e8;
+            border-radius: 18px;
+            padding: 16px 16px 14px 18px;
+            box-shadow: 0 6px 16px rgba(17,17,17,.04);
+            cursor: grab;
+            transition: .18s ease;
+        }
+        .kanban-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 5px;
+            border-radius: 18px 0 0 18px;
+            background: #d7dce3;
+        }
+        .kanban-card.status-pending::before { background: #F17950; }
+        .kanban-card.status-in-progress::before { background: #78517C; }
+        .kanban-card.status-completed::before { background: #83D1C4; }
+        .kanban-card:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+        .kanban-card:active { cursor: grabbing; }
+        .kanban-card-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: .98rem;
+            font-weight: 700;
+            color: #202226;
+            letter-spacing: -.02em;
+            margin-bottom: 10px;
+        }
+        .kanban-card-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .kanban-card-footer {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 12px;
+        }
+        .kanban-empty {
+            min-height: 120px;
+            border: 1px dashed #d9dee5;
+            border-radius: 18px;
+            display: grid;
+            place-items: center;
+            color: #7b818a;
+            font-size: .88rem;
+            font-weight: 700;
+            background: rgba(255,255,255,.7);
+        }
+
+        .modal {
+            position: fixed; inset: 0; background: rgba(17,17,17,.42); backdrop-filter: blur(8px);
+            display:flex; align-items:center; justify-content:center; z-index: 1200; opacity:0; visibility:hidden; transition:.25s ease; padding: 20px;
+        }
+        .modal.active { opacity:1; visibility:visible; }
+        .modal-content {
+            width:min(760px, 100%); padding: 28px; position:relative;
+            transform: translateY(14px) scale(.98); transition:.25s ease;
+            background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(255,255,255,.95));
+        }
+        .modal.active .modal-content { transform: translateY(0) scale(1); }
+        .modal-close {
+            position:absolute; top:16px; right:16px; width:38px; height:38px; border-radius: 50%; border:0;
+            background:#f3f4f6; color:#4b5563; cursor:pointer; font-size: 1.1rem; transition:.2s ease;
+        }
+        .modal-close:hover { background:#fff5f5; color: var(--error); }
+        .modal-title { font-family:'Poppins', sans-serif; font-size: 1.7rem; font-weight:700; color:#222; margin-bottom: 22px; letter-spacing: -.03em; }
+        .form-group { margin-bottom: 18px; }
+        .form-group label { display:block; margin-bottom: 8px; font-size: .79rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .12em; }
+        .form-group textarea { min-height: 110px; resize: vertical; }
+        .form-row { display:grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+        .empty-state {
+            display:grid; place-items:center; min-height: 180px; color: var(--text-secondary); font-weight:700;
+            border:1px dashed #d6dbe1; border-radius: 18px; background:#fbfcfd; text-align:center; padding:20px;
+        }
+        .empty-icon { display:none; }
+        .empty-text { font-family:'Poppins', sans-serif; font-size: 1rem; }
+
+        .footer-note { margin-top: 10px; color: var(--text-secondary); font-size: .82rem; line-height: 1.55; }
+
+        @media (max-width: 1180px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 860px) {
+            .header-content { align-items:flex-start; }
+            .header-right { width:100%; justify-content:flex-start; padding-right: 0; }
+            .controls { grid-template-columns: 1fr; }
+            .item-card { flex-direction: column; }
+            .item-actions { flex-direction: row; margin-top: 8px; }
+            .form-row { grid-template-columns: 1fr; }
+            .section { padding: 18px; }
+            .modal-content { padding: 22px; }
+            .home-hero { padding: 38px 22px 30px; }
+            .home-subtitle { font-size: 1rem; }
+            .home-quick-grid, .home-nav-grid { grid-template-columns: 1fr; }
+            .kanban-board { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 640px) {
+            .container { padding: 18px 14px 30px; }
+            .tabs-container { flex-wrap: nowrap; overflow-x:auto; padding-bottom: 4px; }
+            .tab { font-size: .86rem; padding: 10px 12px; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .dashboard-grid { grid-template-columns: 1fr; }
+            .header-left h1 { font-size: 1rem; }
+            .brand-sub { font-size: .72rem; }
+            .home-actions { flex-direction: column; }
+            .home-btn-primary, .home-btn-secondary { width: 100%; min-width: 0; }
+        }
+    </style>
+</head>
+<body>
+    <!-- LOGIN SCREEN -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-card">
+            <h1>🔐 Acesso Restrito</h1>
+            <p>Digite seu e-mail e senha para editar tarefas e atas</p>
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <div class="login-form">
+                    <input type="email" id="emailInput" placeholder="E-mail" required>
+                    <input type="password" id="passwordInput" placeholder="Senha" required>
+                    <button type="submit" class="login-btn">Entrar</button>
+                    <button type="button" class="view-only-btn" onclick="viewOnly()">Apenas Visualizar</button>
+                </div>
+            </form>
+            <div id="loginError" class="login-error"></div>
+        </div>
+    </div>
+
+    <!-- AUTH BADGE -->
+    <div id="authBadge" class="auth-badge" style="display: none;">
+        <span id="authText"></span>
+    </div>
+
+    <!-- MAIN APP -->
+    <div id="mainApp" style="display: none;">
+        <header>
+            <div class="header-content">
+                <div class="header-left">
+                    <div>
+                        <h1>Sistema SESI Esporte</h1>
+                        <p>Acompanhamento de Implantação</p>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="header-stats">
+                        <div class="total-tasks" id="totalTasks">0</div>
+                        <div class="total-label">Tarefas</div>
+                    </div>
+                    <button class="btn-header btn-backup" onclick="exportBackup()" title="Fazer backup dos dados">Backup</button>
+                    <button class="btn-header btn-backup" onclick="document.getElementById('importFile').click()" title="Restaurar backup">Restaurar</button>
+                    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importBackup(this.files[0])"/>
+                    <button class="btn-header btn-logout" onclick="logout()">Sair</button>
+                </div>
+            </div>
+        </header>
+
+        <div class="container">
+            <!-- Tabs de Navegação -->
+            <div class="tabs">
+                <div class="tabs-container">
+                    <button class="tab active" onclick="switchTab('inicio', event)">Início</button>
+                    <button class="tab" onclick="switchTab('tarefas', event)">Tarefas</button>
+                    <button class="tab" onclick="switchTab('feedback', event)">Feedback do Piloto</button>
+                    <button class="tab" onclick="switchTab('kanban', event)">Kanban</button>
+                    <button class="tab" onclick="switchTab('dashboard', event)">Dashboard</button>
+                    <button class="tab" onclick="switchTab('atas', event)">Atas</button>
+                </div>
+            </div>
+
+            <!-- TAB: INÍCIO -->
+            <div id="inicio" class="tab-content active">
+                <div class="home-hero">
+                    <span class="home-eyebrow">Programa SESI Esporte</span>
+                    <h2 class="home-title">Sistema SESI Esporte</h2>
+                    <p class="home-subtitle">Acompanhe tarefas, feedbacks do piloto, atas e indicadores do projeto em um ambiente único, mais claro e organizado para o dia a dia da implantação.</p>
+</div>
+
+                
+                <div class="home-nav-grid">
+                    <div class="home-nav-card is-public" onclick="window.open('https://sara-paes.github.io/acompanhamento-sesi-esporte/feedback-piloto/', '_blank')">
+                        <div class="home-nav-title">Coleta de Feedback do Piloto</div>
+                        <div class="home-nav-subtitle">Abrir formulário público</div>
+                    </div>
+                    <div class="home-nav-card is-roadmap" onclick="window.open('roadmap.html', '_blank')">
+                        <div class="home-nav-title">Roadmap</div>
+                        <div class="home-nav-subtitle">Abrir página dedicada</div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- TAB: TAREFAS -->
+            <div id="tarefas" class="tab-content">
+                <div class="section">
+                    <div class="section-header">
+                        <div class="section-title-group">
+                            <div class="section-title">
+                                <span class="section-icon">✓</span>
+                                Tarefas
+                            </div>
+                            <div class="section-info" id="tasksInfo">0 total • 0 em andamento • 0 concluídas</div>
+                        </div>
+                        <button class="btn-nova" id="btnNewTask" onclick="openTaskModal()" disabled>+ Nova Tarefa</button>
+                    </div>
+
+                    
+                    <div class="controls">
+                        <div class="search-box">
+                            <span class="search-icon"></span>
+                            <input type="text" id="searchTasks" placeholder="Buscar tarefas..." onkeyup="filterTasks()">
+                        </div>
+                        <div class="task-toolbar">
+                            <div class="status-multi-filter" aria-label="Filtrar por status">
+                                <label class="status-filter-chip pending"><input type="checkbox" value="pending" onchange="filterTasks()"><span>Pendente</span></label>
+                                <label class="status-filter-chip in-progress"><input type="checkbox" value="in-progress" onchange="filterTasks()"><span>Em andamento</span></label>
+                                <label class="status-filter-chip completed"><input type="checkbox" value="completed" onchange="filterTasks()"><span>Concluída</span></label>
+                            </div>
+                            <select class="select-box origin-filter" id="filterTaskOrigin" onchange="filterTasks()">
+                                <option value="">Todas as origens</option>
+                                <option value="manual">Manual</option>
+                                <option value="feedback_piloto">Feedback do Piloto</option>
+                            </select>
+                            <div class="view-toggle" aria-label="Modo de visualização">
+                                <button type="button" class="view-toggle-btn active" id="viewCardsBtn" onclick="setTaskViewMode('cards')">Cards</button>
+                                <button type="button" class="view-toggle-btn" id="viewListBtn" onclick="setTaskViewMode('list')">Lista</button>
+                            </div>
+                        </div>
+                        <select class="select-box" id="sortTasks" onchange="filterTasks()">
+                            <option value="data-desc">Mais Recentes</option>
+                            <option value="data-asc">Mais Antigos</option>
+                            <option value="status">Por Status</option>
+                            <option value="entrega">Por Data de Entrega</option>
+                        </select>
+                        <button class="btn-export" onclick="exportTasksToCSV()">CSV</button>
+                        <button class="btn-export" onclick="exportTasksToPDF()">PDF</button>
+                    </div>
+
+
+                    <div id="tasksList">
+                        <div class="empty-state">
+                            <div class="empty-icon"></div>
+                            <div class="empty-text">Nenhuma tarefa registrada</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: KANBAN -->
+            <div id="kanban" class="tab-content">
+                <div class="section">
+                    <div class="section-header">
+                        <div class="section-title-group">
+                            <div class="section-title">Kanban</div>
+                            <div class="section-info">Arraste as tarefas entre colunas para atualizar o status automaticamente</div>
+                        </div>
+                    </div>
+
+                    <div class="kanban-board">
+                        <div class="kanban-column" data-status="pending" ondragover="handleKanbanDragOver(event)" ondragleave="handleKanbanDragLeave(event)" ondrop="handleKanbanDrop(event, 'pending')">
+                            <div class="kanban-column-header">
+                                <div class="kanban-column-title">Pendente</div>
+                                <div class="kanban-column-count" id="kanbanCountPending">0</div>
+                            </div>
+                            <div class="kanban-column-body" id="kanbanPending"></div>
+                        </div>
+
+                        <div class="kanban-column" data-status="in-progress" ondragover="handleKanbanDragOver(event)" ondragleave="handleKanbanDragLeave(event)" ondrop="handleKanbanDrop(event, 'in-progress')">
+                            <div class="kanban-column-header">
+                                <div class="kanban-column-title">Em andamento</div>
+                                <div class="kanban-column-count" id="kanbanCountProgress">0</div>
+                            </div>
+                            <div class="kanban-column-body" id="kanbanInProgress"></div>
+                        </div>
+
+                        <div class="kanban-column is-completed-column" data-status="completed" ondragover="handleKanbanDragOver(event)" ondragleave="handleKanbanDragLeave(event)" ondrop="handleKanbanDrop(event, 'completed')">
+                            <div class="kanban-column-header">
+                                <div class="kanban-column-title">Concluída</div>
+                                <div class="kanban-column-header-actions">
+                                    <button type="button" class="kanban-collapse-btn" id="kanbanCompletedToggle" onclick="toggleCompletedKanban()">Recolher</button>
+                                    <div class="kanban-column-count" id="kanbanCountCompleted">0</div>
+                                </div>
+                            </div>
+                            <div class="kanban-column-body" id="kanbanCompleted"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: DASHBOARD -->
+            <div id="dashboard" class="tab-content">
+                <div class="section">
+                    <div class="section-header" style="margin-bottom:22px;"><div class="section-title-group"><div class="section-title">Dashboard de progresso</div><div class="section-info">Leitura consolidada do andamento das tarefas por status</div></div></div>
+
+                    <div class="stats-grid" id="statsGrid">
+                        <div class="stat-card total">
+                            <div class="stat-number" id="statTotal">0</div>
+                            <div class="stat-label">Total de Tarefas</div>
+                        </div>
+                        <div class="stat-card pending">
+                            <div class="stat-number" id="statPending">0</div>
+                            <div class="stat-label">Pendentes</div>
+                        </div>
+                        <div class="stat-card in-progress">
+                            <div class="stat-number" id="statInProgress">0</div>
+                            <div class="stat-label">Em Andamento</div>
+                        </div>
+                        <div class="stat-card completed">
+                            <div class="stat-number" id="statCompleted">0</div>
+                            <div class="stat-label">Concluídas</div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-grid">
+                        <div class="chart-card">
+                            <h3>Status das tarefas</h3>
+                            <div class="chart-container">
+                                <canvas id="statusChart"></canvas>
+                            </div>
+                        </div>
+</div>
+
+                    <div style="margin-top: 24px;">
+                        <button class="btn-export" onclick="exportDashboardToPDF()" style="width: 100%; padding: 14px;">Exportar dashboard em PDF</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: FEEDBACK DO PILOTO -->
+            <div id="feedback" class="tab-content">
+                <div class="section">
+                    <div class="section-header">
+                        <div class="section-title-group">
+                            <div class="section-title">
+                                <span class="section-icon"></span>
+                                Feedback do Piloto
+                            </div>
+                            <div class="section-info" id="feedbackInfo">0 feedbacks • 0 novos • 0 arquivados</div>
+                        </div>
+                    </div>
+
+                    <div class="controls">
+                        <div class="search-box">
+                            <span class="search-icon"></span>
+                            <input type="text" id="searchFeedback" placeholder="Buscar feedbacks..." onkeyup="filterFeedback()">
+                        </div>
+                        <select class="select-box" id="filterFeedbackStatus" onchange="filterFeedback()">
+                            <option value="">Todos os Status</option>
+                            <option value="novo">Novo</option>
+                            <option value="em_analise">Em análise</option>
+                            <option value="transformado_em_tarefa">Transformado em tarefa</option>
+                            <option value="arquivado">Arquivado</option>
+                        </select>
+                        <select class="select-box" id="filterFeedbackType" onchange="filterFeedback()">
+                            <option value="">Todos os Tipos</option>
+                            <option value="Erro">Erro</option>
+                            <option value="Melhoria">Melhoria</option>
+                            <option value="Dúvida">Dúvida</option>
+                            <option value="Sugestão">Sugestão</option>
+                            <option value="Outro">Outro</option>
+                        </select>
+                        <select class="select-box" id="filterFeedbackFunctionality" onchange="filterFeedback()">
+                            <option value="">Todas as Funcionalidades</option>
+                            <option value="Avalia">Avalia</option>
+                            <option value="Chamada">Chamada</option>
+                            <option value="Login">Login</option>
+                            <option value="Planejamento Semestral">Planejamento Semestral</option>
+                            <option value="Outra">Outra</option>
+                        </select>
+                        <select class="select-box" id="filterFeedbackPriority" onchange="filterFeedback()">
+                            <option value="">Todas as Prioridades</option>
+                            <option value="Baixa">Baixa</option>
+                            <option value="Média">Média</option>
+                            <option value="Alta">Alta</option>
+                            <option value="Crítica">Crítica</option>
+                        </select>
+                    </div>
+
+                    <div id="feedbackList">
+                        <div class="empty-state">
+                            <div class="empty-icon"></div>
+                            <div class="empty-text">Nenhum feedback registrado</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: ATAS -->
+            <div id="atas" class="tab-content">
+                <div class="section">
+                    <div class="section-header">
+                        <div class="section-title-group">
+                            <div class="section-title">
+                                <span class="section-icon"></span>
+                                Atas de Reunião
+                            </div>
+                            <div class="section-info" id="minutesInfo">0 atas registradas</div>
+                        </div>
+                        <button class="btn-nova" id="btnNewMinutes" onclick="openMinutesModal()" disabled>+ Registrar Ata</button>
+                    </div>
+
+                    <div class="controls">
+                        <div class="search-box">
+                            <span class="search-icon"></span>
+                            <input type="text" id="searchMinutes" placeholder="Buscar nas atas..." onkeyup="filterMinutes()">
+                        </div>
+                        <button class="btn-export" onclick="exportMinutesToCSV()">CSV</button>
+                        <button class="btn-export" onclick="exportMinutesToPDF()">PDF</button>
+                    </div>
+
+                    <div id="minutesList">
+                        <div class="empty-state">
+                            <div class="empty-icon"></div>
+                            <div class="empty-text">Nenhuma ata registrada</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Nova Tarefa -->
+    <div class="modal" id="taskModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeTaskModal()">✕</button>
+            <div class="modal-title" id="taskModalTitle">Adicionar Nova Tarefa</div>
+            <form id="taskForm" onsubmit="saveTask(event)">
+                <div class="form-group required">
+                    <label>Tarefa</label>
+                    <input type="text" id="taskDescription" placeholder="Descreva a tarefa" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Responsável</label>
+                    <input type="text" id="taskResponsible" placeholder="Nome do responsável">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group required">
+                        <label>Status</label>
+                        <select id="taskStatus" required>
+                            <option value="pending">Pendente</option>
+                            <option value="in-progress">Em andamento</option>
+                            <option value="completed">Concluída</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group required">
+                        <label>Data de Criação</label>
+                        <input type="date" id="taskDate" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Previsão de Entrega</label>
+                        <input type="date" id="taskDeadline">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Observações</label>
+                    <textarea id="taskNotes" placeholder="Observações adicionais"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Anexo</label>
+                    <input type="file" id="taskAttachment" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.webp">
+                    <div class="attachment-hint">Você pode anexar PDF, documento, planilha ou imagem.</div>
+                    <div id="taskAttachmentCurrent" class="attachment-actions"></div>
+                </div>
+
+                <button type="submit" class="btn-submit" id="taskSubmitBtn">Adicionar Tarefa</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para Nova Ata -->
+    <div class="modal" id="minutesModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeMinutesModal()">✕</button>
+            <div class="modal-title" id="minutesModalTitle">Registrar Nova Ata</div>
+            <form id="minutesForm" onsubmit="saveMinutes(event)">
+                <div class="form-group required">
+                    <label>Data da Reunião</label>
+                    <input type="date" id="minutesDate" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Participantes</label>
+                    <input type="text" id="minutesParticipants" placeholder="Nomes dos participantes">
+                </div>
+
+                <div class="form-group required">
+                    <label>Alinhamentos Realizados</label>
+                    <textarea id="minutesAchievements" placeholder="Descreva os alinhamentos realizados" required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Observações</label>
+                    <textarea id="minutesNotes" placeholder="Observações adicionais"></textarea>
+                </div>
+
+                <button type="submit" class="btn-submit" id="minutesSubmitBtn">Registrar Ata</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para Detalhes do Feedback -->
+    <div class="modal" id="feedbackDetailsModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeFeedbackDetailsModal()">✕</button>
+            <div class="modal-title">Detalhes do Feedback</div>
+            <div id="feedbackDetailsContent"></div>
+        </div>
+    </div>
+
+    <!-- Modal para Transformar Feedback em Tarefa -->
+    <div class="modal" id="feedbackTaskModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeFeedbackTaskModal()">✕</button>
+            <div class="modal-title">Transformar em Tarefa</div>
+            <form id="feedbackTaskForm" onsubmit="saveFeedbackTask(event)">
+                <div class="form-group required">
+                    <label>Título</label>
+                    <input type="text" id="feedbackTaskTitle" required>
+                </div>
+
+                <div class="form-group required">
+                    <label>Descrição / Observação Inicial</label>
+                    <textarea id="feedbackTaskNotes" required></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Responsável</label>
+                        <input type="text" id="feedbackTaskResponsible" placeholder="Nome do responsável interno">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group required">
+                        <label>Status</label>
+                        <select id="feedbackTaskStatus" required>
+                            <option value="pending" selected>Pendente</option>
+                            <option value="in-progress">Em andamento</option>
+                            <option value="completed">Concluída</option>
+                        </select>
+                    </div>
+                    <div class="form-group required">
+                        <label>Data de Criação</label>
+                        <input type="date" id="feedbackTaskDate" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Previsão de Entrega</label>
+                        <input type="date" id="feedbackTaskDeadline">
+                    </div>
+                    <div class="form-group">
+                        <label>Prioridade</label>
+                        <input type="text" id="feedbackTaskPriority" readonly>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Unidade</label>
+                        <input type="text" id="feedbackTaskUnit" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Funcionalidade</label>
+                        <input type="text" id="feedbackTaskFunctionality" readonly>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Anexo da tarefa</label>
+                    <input type="file" id="feedbackTaskAttachment" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.webp">
+                    <div class="attachment-hint">Se o feedback já tiver anexo e você não enviar outro, o anexo original será mantido.</div>
+                    <div id="feedbackTaskAttachmentCurrent" class="attachment-actions"></div>
+                </div>
+
+                <button type="submit" class="btn-submit">Criar Tarefa</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Configurações do Supabase
+        const PROJECT_URL = "https://wgbdbazajqswszhzzodt.supabase.co";
+        const ANON_KEY = "sb_publishable_u3dOv62_ppsPRrIk4U-plA_ENwWtk_4";
+        
+        let supabaseClient = null;
+        let statusChart;
+        let isAuthenticated = false;
+        let isViewOnly = false;
+        let editingTaskId = null;
+        let editingMinutesId = null;
+        
+        let tasksData = [];
+        let minutesData = [];
+        let feedbackData = [];
+        let selectedFeedbackId = null;
+        let currentDraggedTaskId = null;
+        let currentTaskAttachmentUrl = null;
+        let currentTaskAttachmentName = null;
+        let currentTaskView = 'cards';
+        let completedKanbanCollapsed = false;
+
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                supabaseClient = window.supabase.createClient(PROJECT_URL, ANON_KEY);
+                
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                
+                if (session) {
+                    isAuthenticated = true;
+                    isViewOnly = false;
+                    showApp();
+                } else {
+                    const wasViewOnly = sessionStorage.getItem('view_only') === 'true';
+                    if (wasViewOnly) {
+                        isViewOnly = true;
+                        isAuthenticated = true;
+                        showApp();
+                    } else {
+                        document.getElementById('loginScreen').style.display = 'flex';
+                    }
+                }
+            } catch (error) {
+                console.error("Erro na inicialização:", error);
+            }
+        });
+
+        // ===== AUTENTICAÇÃO =====
+        async function handleLogin(event) {
+            event.preventDefault();
+            const email = document.getElementById('emailInput').value;
+            const password = document.getElementById('passwordInput').value;
+            const errorDiv = document.getElementById('loginError');
+            
+            errorDiv.textContent = 'Autenticando...';
+            
+            try {
+                const { data, error } = await supabaseClient.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+
+                if (error) throw error;
+
+                isAuthenticated = true;
+                isViewOnly = false;
+                sessionStorage.setItem('view_only', 'false');
+                showApp();
+            } catch (error) {
+                errorDiv.textContent = 'Erro: ' + error.message;
+            }
+        }
+
+        function viewOnly() {
+            isAuthenticated = true;
+            isViewOnly = true;
+            sessionStorage.setItem('view_only', 'true');
+            showApp();
+        }
+
+        async function logout() {
+            await supabaseClient.auth.signOut();
+            isAuthenticated = false;
+            isViewOnly = false;
+            sessionStorage.removeItem('view_only');
+            
+            document.getElementById('loginScreen').style.display = 'flex';
+            document.getElementById('mainApp').style.display = 'none';
+            document.getElementById('authBadge').style.display = 'none';
+            document.getElementById('passwordInput').value = '';
+            document.getElementById('emailInput').value = '';
+            document.getElementById('loginError').textContent = '';
+        }
+
+        function showApp() {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('mainApp').style.display = 'block';
+            document.getElementById('authBadge').style.display = 'block';
+            
+            const authText = document.getElementById('authText');
+            if (isViewOnly) {
+                authText.textContent = 'Apenas visualização';
+                document.getElementById('authBadge').classList.add('view-only');
+                document.getElementById('btnNewTask').disabled = true;
+                document.getElementById('btnNewMinutes').disabled = true;
+            } else {
+                authText.textContent = 'Edição ativada';
+                document.getElementById('authBadge').classList.remove('view-only');
+                document.getElementById('btnNewTask').disabled = false;
+                document.getElementById('btnNewMinutes').disabled = false;
+            }
+
+            loadTasks();
+            loadMinutes();
+            loadFeedback();
+            setTodayDate();
+        }
+
+        // ===== TAREFAS (CRUD SUPABASE) =====
+        async function loadTasks() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('tarefas')
+                    .select('*')
+                    .order('data_criacao', { ascending: false });
+
+                if (error) throw error;
+
+                tasksData = data.map(t => ({
+                    id: t.id,
+                    description: t.titulo,
+                    status: t.status,
+                    responsible: t.responsavel,
+                    notes: t.observacao,
+                    date: t.data_criacao,
+                    deadline: t.previsao_entrega,
+                    attachmentUrl: t.anexo_url,
+                    attachmentName: t.anexo_nome,
+                    link: t.link_externo,
+                    origin: t.origem,
+                    priority: t.prioridade,
+                    unit: t.unidade,
+                    feedbackId: t.feedback_id
+                }));
+
+                filterTasks();
+                updateTasksInfo(tasksData);
+                updateTotalTasks(tasksData);
+                updateDashboard();
+                renderKanban();
+            } catch (error) {
+                console.error("Erro ao carregar tarefas:", error);
+            }
+        }
+
+        async function saveTask(event) {
+            event.preventDefault();
+            if (isViewOnly) return;
+
+            const attachmentInput = document.getElementById('taskAttachment');
+            let anexoUrl = currentTaskAttachmentUrl;
+            let anexoNome = currentTaskAttachmentName;
+
+            try {
+                if (attachmentInput.files.length > 0) {
+                    const arquivo = attachmentInput.files[0];
+                    if (arquivo.size > 100 * 1024 * 1024) {
+                        throw new Error('O anexo excede o limite máximo de 100 MB.');
+                    }
+
+                    const safeFileName = sanitizeFileName(arquivo.name);
+                    const filePath = `public/tarefas/${Date.now()}_${safeFileName}`;
+
+                    const { error: uploadError } = await supabaseClient.storage
+                        .from('feedback-piloto')
+                        .upload(filePath, arquivo, {
+                            cacheControl: '3600',
+                            upsert: false
+                        });
+
+                    if (uploadError) throw uploadError;
+                    anexoUrl = filePath;
+                    anexoNome = arquivo.name;
+                }
+
+                const existingTask = editingTaskId ? tasksData.find(task => task.id === editingTaskId) : null;
+
+                const task = {
+                    titulo: document.getElementById('taskDescription').value,
+                    responsavel: document.getElementById('taskResponsible').value,
+                    fase: 'outros',
+                    status: document.getElementById('taskStatus').value,
+                    data_criacao: document.getElementById('taskDate').value,
+                    previsao_entrega: document.getElementById('taskDeadline').value || null,
+                    observacao: document.getElementById('taskNotes').value,
+                    origem: existingTask?.origin || 'manual',
+                    feedback_id: existingTask?.feedbackId || null,
+                    unidade: existingTask?.unit || null,
+                    funcionalidade: existingTask?.functionality || null,
+                    prioridade: existingTask?.priority || null,
+                    link_externo: existingTask?.link || null,
+                    anexo_url: anexoUrl,
+                    anexo_nome: anexoNome
+                };
+
+                let result;
+                if (editingTaskId) {
+                    result = await supabaseClient
+                        .from('tarefas')
+                        .update(task)
+                        .eq('id', editingTaskId);
+                } else {
+                    result = await supabaseClient
+                        .from('tarefas')
+                        .insert([task]);
+                }
+
+                if (result.error) throw result.error;
+
+                closeTaskModal();
+                loadTasks();
+            } catch (error) {
+                alert('Erro ao salvar tarefa: ' + error.message);
+            }
+        }
+
+        async function deleteTask(id) {
+            if (isViewOnly) return;
+            if (!confirm('Tem certeza que deseja excluir esta tarefa?')) return;
+
+            try {
+                const { error } = await supabaseClient
+                    .from('tarefas')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+                loadTasks();
+            } catch (error) {
+                alert("Erro ao excluir: " + error.message);
+            }
+        }
+
+        // ===== ATAS (CRUD SUPABASE) =====
+        async function loadMinutes() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('atas')
+                    .select('*')
+                    .order('data', { ascending: false });
+
+                if (error) throw error;
+
+                minutesData = data.map(m => ({
+                    id: m.id,
+                    date: m.data,
+                    participants: m.participantes,
+                    achievements: m.alinhamentos,
+                    notes: m.observacoes
+                }));
+
+                filterMinutes();
+                document.getElementById('minutesInfo').textContent = `${minutesData.length} atas registradas`;
+            } catch (error) {
+                console.error("Erro ao carregar atas:", error);
+            }
+        }
+
+        async function saveMinutes(event) {
+            event.preventDefault();
+            if (isViewOnly) return;
+
+            const minute = {
+                data: document.getElementById('minutesDate').value,
+                participantes: document.getElementById('minutesParticipants').value,
+                alinhamentos: document.getElementById('minutesAchievements').value,
+                observacoes: document.getElementById('minutesNotes').value
+            };
+
+            try {
+                let result;
+                if (editingMinutesId) {
+                    result = await supabaseClient
+                        .from('atas')
+                        .update(minute)
+                        .eq('id', editingMinutesId);
+                } else {
+                    result = await supabaseClient
+                        .from('atas')
+                        .insert([minute]);
+                }
+
+                if (result.error) throw result.error;
+
+                closeMinutesModal();
+                loadMinutes();
+            } catch (error) {
+                alert("Erro ao salvar ata: " + error.message);
+            }
+        }
+
+        async function deleteMinutes(id) {
+            if (isViewOnly) return;
+            if (!confirm('Deseja excluir esta ata?')) return;
+
+            try {
+                const { error } = await supabaseClient
+                    .from('atas')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+                loadMinutes();
+            } catch (error) {
+                alert("Erro ao excluir: " + error.message);
+            }
+        }
+
+        // ===== FEEDBACK DO PILOTO =====
+        async function loadFeedback() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('feedback_piloto')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                feedbackData = data || [];
+                filterFeedback();
+                updateFeedbackInfo();
+            } catch (error) {
+                console.error("Erro ao carregar feedbacks:", error);
+            }
+        }
+
+        function updateFeedbackInfo() {
+            const total = feedbackData.length;
+            const novos = feedbackData.filter(f => f.status === 'novo').length;
+            const arquivados = feedbackData.filter(f => f.status === 'arquivado').length;
+            const info = document.getElementById('feedbackInfo');
+            if (info) {
+                info.textContent = `${total} feedbacks • ${novos} novos • ${arquivados} arquivados`;
+            }
+        }
+
+        function filterFeedback() {
+            const searchTerm = document.getElementById('searchFeedback').value.toLowerCase();
+            const statusFilter = document.getElementById('filterFeedbackStatus').value;
+            const typeFilter = document.getElementById('filterFeedbackType').value;
+            const functionalityFilter = document.getElementById('filterFeedbackFunctionality').value;
+            const priorityFilter = document.getElementById('filterFeedbackPriority').value;
+
+            const filtered = feedbackData.filter(feedback => {
+                const descriptionText = stripHtml(feedback.descricao || '').toLowerCase();
+                const matchSearch =
+                    (feedback.titulo || '').toLowerCase().includes(searchTerm) ||
+                    (feedback.nome_responsavel || '').toLowerCase().includes(searchTerm) ||
+                    (feedback.unidade || '').toLowerCase().includes(searchTerm) ||
+                    descriptionText.includes(searchTerm);
+
+                const matchStatus = !statusFilter || feedback.status === statusFilter;
+                const matchType = !typeFilter || feedback.tipo_apontamento === typeFilter;
+                const matchFunctionality = !functionalityFilter || feedback.funcionalidade === functionalityFilter;
+                const matchPriority = !priorityFilter || feedback.prioridade === priorityFilter;
+
+                return matchSearch && matchStatus && matchType && matchFunctionality && matchPriority;
+            });
+
+            displayFeedback(filtered);
+        }
+
+        function displayFeedback(items) {
+            const list = document.getElementById('feedbackList');
+            if (!items.length) {
+                list.innerHTML = '<div class="empty-state"><div class="empty-icon"></div><div class="empty-text">Nenhum feedback encontrado</div></div>';
+                return;
+            }
+
+            list.innerHTML = `<div class="items-list">${items.map(feedback => {
+                const preview = truncateText(stripHtml(feedback.descricao || ''), 240);
+                return `
+                    <div class="item-card status-${mapFeedbackStatusClass(feedback.status)}">
+                        <div class="item-content">
+                            <div class="item-title">${escapeHtml(feedback.titulo || 'Sem título')}</div>
+                            <div class="item-meta">
+                                <span class="item-badge badge-${mapFeedbackBadgeClass(feedback.status)}">${getFeedbackStatusLabel(feedback.status)}</span>
+                                <span class="item-badge badge-phase">${escapeHtml(feedback.tipo_apontamento || '—')}</span>
+                                <span class="item-badge badge-phase">${escapeHtml(feedback.funcionalidade || '—')}</span>
+                                <span class="item-badge badge-phase">${escapeHtml(feedback.prioridade || '—')}</span>
+                            </div>
+                            <div class="item-dates">
+                                <span>🏢 ${escapeHtml(feedback.unidade || '—')}</span>
+                                <span>${escapeHtml(feedback.nome_responsavel || '—')}</span>
+                                <span>${formatDateTime(feedback.created_at)}</span>
+                            </div>
+                            <div class="item-description">${escapeHtml(preview)}</div>
+                            <div class="feedback-actions">
+                                <button class="btn-inline" onclick="openFeedbackDetailsModal('${feedback.id}')">Ver detalhes</button>
+                                ${feedback.link_relacionado ? `<a class="btn-inline" href="${feedback.link_relacionado}" target="_blank" rel="noopener noreferrer">Abrir link</a>` : ''}
+                                ${feedback.anexo_url ? `<button class="btn-inline" onclick="openAttachment('${feedback.anexo_url}')">Ver anexo</button>` : ''}
+                                <button class="btn-inline danger" onclick="archiveFeedback('${feedback.id}')" ${isViewOnly || feedback.status === 'arquivado' ? 'disabled' : ''}>Arquivar</button>
+                                <button class="btn-inline" onclick="openFeedbackTaskModal('${feedback.id}')" ${isViewOnly || feedback.status === 'transformado_em_tarefa' ? 'disabled' : ''}>Transformar em tarefa</button>
+                            </div>
+                        </div>
+                    </div>`;
+            }).join('')}</div>`;
+        }
+
+        function openFeedbackDetailsModal(id) {
+            const feedback = feedbackData.find(item => item.id === id);
+            if (!feedback) return;
+
+            const container = document.getElementById('feedbackDetailsContent');
+            container.innerHTML = `
+                <div class="form-group">
+                    <label>Título</label>
+                    <div class="feedback-rich-text"><strong>${escapeHtml(feedback.titulo || '—')}</strong></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Status</label>
+                        <div class="feedback-rich-text">${getFeedbackStatusLabel(feedback.status)}</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Prioridade</label>
+                        <div class="feedback-rich-text">${escapeHtml(feedback.prioridade || '—')}</div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Tipo do apontamento</label>
+                        <div class="feedback-rich-text">${escapeHtml(feedback.tipo_apontamento || '—')}</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Funcionalidade</label>
+                        <div class="feedback-rich-text">${escapeHtml(feedback.funcionalidade || '—')}</div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Unidade</label>
+                        <div class="feedback-rich-text">${escapeHtml(feedback.unidade || '—')}</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Responsável pelo envio</label>
+                        <div class="feedback-rich-text">${escapeHtml(feedback.nome_responsavel || '—')}</div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Perfil do usuário</label>
+                        <div class="feedback-rich-text">${escapeHtml(feedback.perfil_usuario || '—')}</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Data do registro</label>
+                        <div class="feedback-rich-text">${formatDateTime(feedback.created_at)}</div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Descrição</label>
+                    <div class="feedback-rich-text">${feedback.descricao || '<em>Sem descrição.</em>'}</div>
+                </div>
+                ${feedback.link_relacionado ? `<div class="form-group"><label>Link relacionado</label><div class="feedback-rich-text"><a href="${feedback.link_relacionado}" target="_blank" rel="noopener noreferrer">${escapeHtml(feedback.link_relacionado)}</a></div></div>` : ''}
+                ${feedback.anexo_url ? `<div class="form-group"><label>Anexo</label><div class="feedback-rich-text"><button class="btn-inline" onclick="openAttachment('${feedback.anexo_url}')">Abrir anexo</button></div></div>` : ''}
+            `;
+
+            document.getElementById('feedbackDetailsModal').classList.add('active');
+        }
+
+        function closeFeedbackDetailsModal() {
+            document.getElementById('feedbackDetailsModal').classList.remove('active');
+        }
+
+        async function archiveFeedback(id) {
+            if (isViewOnly) return;
+            if (!confirm('Deseja arquivar este feedback?')) return;
+
+            try {
+                const { error } = await supabaseClient
+                    .from('feedback_piloto')
+                    .update({ status: 'arquivado' })
+                    .eq('id', id);
+
+                if (error) throw error;
+                loadFeedback();
+            } catch (error) {
+                alert('Erro ao arquivar feedback: ' + error.message);
+            }
+        }
+
+        function openFeedbackTaskModal(id) {
+            if (isViewOnly) return;
+            const feedback = feedbackData.find(item => item.id === id);
+            if (!feedback) return;
+
+            selectedFeedbackId = id;
+            document.getElementById('feedbackTaskTitle').value = feedback.titulo || '';
+            document.getElementById('feedbackTaskNotes').value = stripHtml(feedback.descricao || '');
+            document.getElementById('feedbackTaskResponsible').value = '';
+            document.getElementById('feedbackTaskStatus').value = 'pending';
+            document.getElementById('feedbackTaskDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('feedbackTaskDeadline').value = '';
+            document.getElementById('feedbackTaskPriority').value = feedback.prioridade || '';
+            document.getElementById('feedbackTaskUnit').value = feedback.unidade || '';
+            document.getElementById('feedbackTaskFunctionality').value = feedback.funcionalidade || '';
+            document.getElementById('feedbackTaskAttachment').value = '';
+            renderFeedbackTaskAttachmentState(feedback);
+
+            document.getElementById('feedbackTaskModal').classList.add('active');
+        }
+
+        function closeFeedbackTaskModal() {
+            document.getElementById('feedbackTaskModal').classList.remove('active');
+            selectedFeedbackId = null;
+            document.getElementById('feedbackTaskForm').reset();
+            document.getElementById('feedbackTaskAttachment').value = '';
+            document.getElementById('feedbackTaskAttachmentCurrent').innerHTML = '';
+        }
+
+        async function saveFeedbackTask(event) {
+            event.preventDefault();
+            if (!selectedFeedbackId) return;
+
+            const feedback = feedbackData.find(item => item.id === selectedFeedbackId);
+            if (!feedback) {
+                alert('Feedback não localizado.');
+                return;
+            }
+
+            let anexoUrl = feedback.anexo_url || null;
+            let anexoNome = feedback.anexo_nome || null;
+
+            try {
+                const attachmentInput = document.getElementById('feedbackTaskAttachment');
+                if (attachmentInput.files.length > 0) {
+                    const arquivo = attachmentInput.files[0];
+                    if (arquivo.size > 100 * 1024 * 1024) {
+                        throw new Error('O anexo excede o limite máximo de 100 MB.');
+                    }
+                    const safeFileName = sanitizeFileName(arquivo.name);
+                    const filePath = `public/tarefas/${Date.now()}_${safeFileName}`;
+                    const { error: uploadError } = await supabaseClient.storage
+                        .from('feedback-piloto')
+                        .upload(filePath, arquivo, {
+                            cacheControl: '3600',
+                            upsert: false
+                        });
+                    if (uploadError) throw uploadError;
+                    anexoUrl = filePath;
+                    anexoNome = arquivo.name;
+                }
+
+                const task = {
+                    titulo: document.getElementById('feedbackTaskTitle').value,
+                    responsavel: document.getElementById('feedbackTaskResponsible').value,
+                    fase: 'outros',
+                    status: document.getElementById('feedbackTaskStatus').value,
+                    data_criacao: document.getElementById('feedbackTaskDate').value,
+                    previsao_entrega: document.getElementById('feedbackTaskDeadline').value || null,
+                    observacao: document.getElementById('feedbackTaskNotes').value,
+                    origem: 'feedback_piloto',
+                    feedback_id: feedback.id,
+                    unidade: feedback.unidade,
+                    funcionalidade: feedback.funcionalidade,
+                    prioridade: feedback.prioridade,
+                    link_externo: feedback.link_relacionado || null,
+                    anexo_url: anexoUrl,
+                    anexo_nome: anexoNome
+                };
+
+                const { data, error } = await supabaseClient
+                    .from('tarefas')
+                    .insert([task])
+                    .select()
+                    .single();
+
+                if (error) throw error;
+
+                const { error: feedbackError } = await supabaseClient
+                    .from('feedback_piloto')
+                    .update({
+                        status: 'transformado_em_tarefa',
+                        tarefa_id: data.id
+                    })
+                    .eq('id', feedback.id);
+
+                if (feedbackError) throw feedbackError;
+
+                closeFeedbackTaskModal();
+                loadFeedback();
+                loadTasks();
+            } catch (error) {
+                alert('Erro ao transformar feedback em tarefa: ' + error.message);
+            }
+        }
+
+        async function openAttachment(path) {
+            try {
+                const { data, error } = await supabaseClient.storage
+                    .from('feedback-piloto')
+                    .createSignedUrl(path, 60);
+
+                if (error) throw error;
+                window.open(data.signedUrl, '_blank');
+            } catch (error) {
+                alert('Não foi possível abrir o anexo: ' + error.message);
+            }
+        }
+
+        // ===== BACKUP / RESTORE =====
+        function exportBackup() {
+            const backup = {
+                timestamp: new Date().toISOString(),
+                tasks: tasksData,
+                minutes: minutesData,
+                version: 'supabase-2.0'
+            };
+            
+            const dataStr = JSON.stringify(backup, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `backup-sesi-${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        async function importBackup(file) {
+            if (isViewOnly) {
+                alert("Apenas usuários autenticados podem restaurar backup.");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const backup = JSON.parse(e.target.result);
+                    if (!backup.tasks || !backup.minutes) throw new Error("Formato inválido");
+
+                    if (!confirm("Isso irá importar os dados para o banco. Deseja continuar?")) return;
+
+                    const tasksToInsert = backup.tasks.map(t => ({
+                        titulo: t.description,
+                        responsavel: t.responsible,
+                        fase: t.phase,
+                        status: t.status,
+                        data_criacao: t.date,
+                        previsao_entrega: t.deadline || null,
+                        observacao: t.notes
+                    }));
+
+                    const minutesToInsert = backup.minutes.map(m => ({
+                        data: m.date,
+                        participantes: m.participants,
+                        alinhamentos: m.achievements,
+                        observacoes: m.notes
+                    }));
+
+                    if (tasksToInsert.length > 0) {
+                        const { error: tErr } = await supabaseClient.from('tarefas').insert(tasksToInsert);
+                        if (tErr) throw tErr;
+                    }
+
+                    if (minutesToInsert.length > 0) {
+                        const { error: mErr } = await supabaseClient.from('atas').insert(minutesToInsert);
+                        if (mErr) throw mErr;
+                    }
+
+                    alert('Backup importado com sucesso!');
+                    loadTasks();
+                    loadMinutes();
+                } catch (error) {
+                    alert('Erro ao restaurar: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // ===== UI HELPERS =====
+        function setTodayDate() {
+            const today = new Date().toISOString().split('T')[0];
+            const tDate = document.getElementById('taskDate');
+            const mDate = document.getElementById('minutesDate');
+            if(tDate) tDate.value = today;
+            if(mDate) mDate.value = today;
+        }
+
+        function switchTab(tabName, event, activateMenu = false) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+
+            const target = document.getElementById(tabName);
+            if (target) target.classList.add('active');
+
+            if (event && event.currentTarget) {
+                event.currentTarget.classList.add('active');
+            } else if (activateMenu) {
+                const menuButton = document.querySelector(`.tab[onclick*="'${tabName}'"]`);
+                if (menuButton) menuButton.classList.add('active');
+            }
+
+            if (tabName === 'dashboard') {
+                setTimeout(() => updateDashboard(), 100);
+            } else if (tabName === 'kanban') {
+                setTimeout(() => renderKanban(), 80);
+            }
+            if (tabName === 'kanban') {
+                setTimeout(() => renderKanban(), 50);
+            }
+        }
+
+        function openTaskModal(isEditing = false) {
+            if (isViewOnly) return;
+            if (!isEditing) {
+                editingTaskId = null;
+                currentTaskAttachmentUrl = null;
+                currentTaskAttachmentName = null;
+                document.getElementById('taskForm').reset();
+                document.getElementById('taskAttachment').value = '';
+                document.getElementById('taskModalTitle').textContent = 'Adicionar Nova Tarefa';
+                document.getElementById('taskSubmitBtn').textContent = 'Adicionar Tarefa';
+                setTodayDate();
+                renderTaskAttachmentState();
+            }
+            document.getElementById('taskModal').classList.add('active');
+        }
+
+        function closeTaskModal() {
+            document.getElementById('taskModal').classList.remove('active');
+            editingTaskId = null;
+            currentTaskAttachmentUrl = null;
+            currentTaskAttachmentName = null;
+            const input = document.getElementById('taskAttachment');
+            if (input) input.value = '';
+            renderTaskAttachmentState();
+        }
+
+        function editTask(id) {
+            if (isViewOnly) return;
+            const task = tasksData.find(t => t.id === id);
+            if (task) {
+                editingTaskId = id;
+                currentTaskAttachmentUrl = task.attachmentUrl || null;
+                currentTaskAttachmentName = task.attachmentName || null;
+                document.getElementById('taskDescription').value = task.description;
+                document.getElementById('taskResponsible').value = task.responsible || '';
+                document.getElementById('taskStatus').value = task.status;
+                document.getElementById('taskDate').value = task.date;
+                document.getElementById('taskDeadline').value = task.deadline || '';
+                document.getElementById('taskNotes').value = task.notes || '';
+                document.getElementById('taskAttachment').value = '';
+
+                document.getElementById('taskModalTitle').textContent = 'Editar Tarefa';
+                document.getElementById('taskSubmitBtn').textContent = 'Atualizar Tarefa';
+                renderTaskAttachmentState();
+                document.getElementById('taskModal').classList.add('active');
+            }
+        }
+
+        function openMinutesModal(isEditing = false) {
+            if (isViewOnly) return;
+            if (!isEditing) {
+                editingMinutesId = null;
+                document.getElementById('minutesForm').reset();
+                document.getElementById('minutesModalTitle').textContent = 'Registrar Nova Ata';
+                document.getElementById('minutesSubmitBtn').textContent = 'Registrar Ata';
+                setTodayDate();
+            }
+            document.getElementById('minutesModal').classList.add('active');
+        }
+
+        function closeMinutesModal() {
+            document.getElementById('minutesModal').classList.remove('active');
+            editingMinutesId = null;
+        }
+
+        function editMinutes(id) {
+            if (isViewOnly) return;
+            const minute = minutesData.find(m => m.id === id);
+            if (minute) {
+                editingMinutesId = id;
+                document.getElementById('minutesDate').value = minute.date;
+                document.getElementById('minutesParticipants').value = minute.participants || '';
+                document.getElementById('minutesAchievements').value = minute.achievements;
+                document.getElementById('minutesNotes').value = minute.notes || '';
+
+                document.getElementById('minutesModalTitle').textContent = 'Editar Ata';
+                document.getElementById('minutesSubmitBtn').textContent = 'Atualizar Ata';
+                document.getElementById('minutesModal').classList.add('active');
+            }
+        }
+
+        function escapeHtml(value) {
+            return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function stripHtml(html) {
+            const temp = document.createElement('div');
+            temp.innerHTML = html || '';
+            return (temp.textContent || temp.innerText || '').trim();
+        }
+
+        function truncateText(text, maxLength) {
+            if (!text) return '';
+            return text.length > maxLength ? text.slice(0, maxLength).trim() + '...' : text;
+        }
+
+        function getFeedbackStatusLabel(status) {
+            if (status === 'novo') return 'Novo';
+            if (status === 'em_analise') return 'Em análise';
+            if (status === 'transformado_em_tarefa') return 'Transformado em tarefa';
+            if (status === 'arquivado') return 'Arquivado';
+            return status || '—';
+        }
+
+        function mapFeedbackStatusClass(status) {
+            if (status === 'novo') return 'in-progress';
+            if (status === 'em_analise') return 'pending';
+            if (status === 'transformado_em_tarefa') return 'completed';
+            if (status === 'arquivado') return 'pending';
+            return 'pending';
+        }
+
+        function mapFeedbackBadgeClass(status) {
+            if (status === 'novo') return 'in-progress';
+            if (status === 'em_analise') return 'pending';
+            if (status === 'transformado_em_tarefa') return 'completed';
+            if (status === 'arquivado') return 'phase';
+            return 'phase';
+        }
+
+        function formatDateTime(dateString) {
+            if (!dateString) return '—';
+            return new Date(dateString).toLocaleString('pt-BR');
+        }
+
+        function getTaskOriginLabel(origin) {
+            return origin === 'feedback_piloto' ? 'Feedback do Piloto' : 'Manual';
+        }
+
+        function getSelectedTaskStatuses() {
+            return Array.from(document.querySelectorAll('.status-filter-chip input:checked')).map(input => input.value);
+        }
+
+        function setTaskViewMode(mode) {
+            currentTaskView = mode;
+            const cardsBtn = document.getElementById('viewCardsBtn');
+            const listBtn = document.getElementById('viewListBtn');
+            if (cardsBtn) cardsBtn.classList.toggle('active', mode === 'cards');
+            if (listBtn) listBtn.classList.toggle('active', mode === 'list');
+            filterTasks();
+        }
+
+        function toggleTaskDetails(taskId) {
+            const details = document.getElementById(`task-details-${taskId}`);
+            const trigger = document.getElementById(`task-details-trigger-${taskId}`);
+            if (!details) return;
+            const isOpen = details.classList.toggle('is-open');
+            if (trigger) trigger.textContent = isOpen ? 'Ocultar detalhes' : 'Ver detalhes';
+        }
+
+        function renderTaskDetails(task) {
+            const hasNotes = task.notes && task.notes.trim();
+            const hasAttachment = task.attachmentUrl;
+            const hasLink = task.link;
+            if (!hasNotes && !hasAttachment && !hasLink) return '';
+
+            return `
+                <div class="task-details" id="task-details-${task.id}">
+                    ${hasNotes ? `<div class="item-description">${escapeHtml(task.notes)}</div>` : ''}
+                    ${(hasAttachment || hasLink) ? `<div class="feedback-actions" style="margin-top:12px;">
+                        ${hasAttachment ? `<button class="btn-inline is-ghost" onclick="openAttachment('${task.attachmentUrl}')">Ver anexo</button>` : ''}
+                        ${hasLink ? `<a class="btn-inline is-ghost" href="${task.link}" target="_blank" rel="noopener noreferrer">Abrir link</a>` : ''}
+                    </div>` : ''}
+                </div>
+            `;
+        }
+
+
+        function filterTasks() {
+            const searchTerm = document.getElementById('searchTasks').value.toLowerCase();
+            const selectedStatuses = getSelectedTaskStatuses();
+            const selectedOrigin = document.getElementById('filterTaskOrigin') ? document.getElementById('filterTaskOrigin').value : '';
+            const sortBy = document.getElementById('sortTasks').value;
+
+            let filtered = tasksData.filter(task => {
+                const matchSearch = task.description.toLowerCase().includes(searchTerm) ||
+                                   (task.responsible && task.responsible.toLowerCase().includes(searchTerm));
+                const matchStatus = selectedStatuses.length === 0 || selectedStatuses.includes(task.status);
+                const matchOrigin = !selectedOrigin || (task.origin || 'manual') === selectedOrigin;
+                return matchSearch && matchStatus && matchOrigin;
+            });
+
+            if (sortBy === 'data-desc') filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+            else if (sortBy === 'data-asc') filtered.sort((a, b) => new Date(a.date) - new Date(b.date));
+            else if (sortBy === 'status') {
+                const order = { 'pending': 1, 'in-progress': 2, 'completed': 3 };
+                filtered.sort((a, b) => order[a.status] - order[b.status]);
+            }
+            else if (sortBy === 'entrega') filtered.sort((a, b) => (new Date(a.deadline || '9999-12-31')) - (new Date(b.deadline || '9999-12-31')));
+
+            displayTasks(filtered);
+        }
+
+        function displayTasks(tasks) {
+            const list = document.getElementById('tasksList');
+            if (tasks.length === 0) {
+                list.innerHTML = '<div class="empty-state"><div class="empty-icon"></div><div class="empty-text">Nenhuma tarefa encontrada</div></div>';
+                return;
+            }
+
+            const cardsHtml = tasks.map(task => {
+                const today = new Date(); today.setHours(0,0,0,0);
+                const deadline = task.deadline ? new Date(task.deadline + 'T00:00:00') : null;
+                let dClass = '', dText = task.deadline ? `Entrega: ${formatDate(task.deadline)}` : '';
+
+                if (deadline) {
+                    const diff = Math.floor((deadline - today) / 86400000);
+                    if (diff < 0) { dClass = 'date-overdue'; dText = `Atrasado ${Math.abs(diff)} dias`; }
+                    else if (diff <= 2) { dClass = 'date-warning'; dText = `Faltam ${diff} dias`; }
+                }
+
+                return `
+                    <div class="item-card status-${task.status}">
+                        <div class="item-content">
+                            <div class="item-title">${task.description}</div>
+                            <div class="item-meta">
+                                <span class="item-badge badge-${task.status}">${getStatusLabel(task.status)}</span>
+                                <span class="item-badge badge-origin">${getTaskOriginLabel(task.origin || 'manual')}</span>
+                                ${task.priority ? `<span class="item-badge badge-phase">${escapeHtml(task.priority)}</span>` : ''}
+                                ${task.unit ? `<span class="item-badge badge-phase">${escapeHtml(task.unit)}</span>` : ''}
+                                ${task.responsible ? `<span class="item-responsible">${escapeHtml(task.responsible)}</span>` : ''}
+                            </div>
+                            <div class="item-dates">
+                                <span>${formatDate(task.date)}</span>
+                                ${dText ? `<span class="${dClass}">${dText}</span>` : ''}
+                            </div>
+                            <div class="feedback-actions" style="margin-top:12px;">
+                                <button class="btn-inline is-ghost" id="task-details-trigger-${task.id}" onclick="toggleTaskDetails('${task.id}')">Ver detalhes</button>
+                                ${task.attachmentUrl ? `<button class="btn-inline is-ghost" onclick="openAttachment('${task.attachmentUrl}')">Anexo</button>` : ''}
+                            </div>
+                            ${renderTaskDetails(task)}
+                        </div>
+                        <div class="item-actions">
+                            <button class="btn-icon" onclick="editTask('${task.id}')" ${isViewOnly ? 'disabled' : ''}>Editar</button>
+                            <button class="btn-icon btn-delete" onclick="deleteTask('${task.id}')" ${isViewOnly ? 'disabled' : ''}>Excluir</button>
+                        </div>
+                    </div>`;
+            }).join('');
+
+            const listHtml = tasks.map(task => {
+                const today = new Date(); today.setHours(0,0,0,0);
+                const deadline = task.deadline ? new Date(task.deadline + 'T00:00:00') : null;
+                let dClass = '', dText = task.deadline ? formatDate(task.deadline) : '—';
+
+                if (deadline) {
+                    const diff = Math.floor((deadline - today) / 86400000);
+                    if (diff < 0) { dClass = 'date-overdue'; dText = `Atrasado ${Math.abs(diff)} dias`; }
+                    else if (diff <= 2) { dClass = 'date-warning'; dText = `Faltam ${diff} dias`; }
+                }
+
+                return `
+                    <div class="item-card status-${task.status}">
+                        <div class="item-content">
+                            <div class="item-title">${task.description}</div>
+                            <div class="item-meta">
+                                <span class="item-badge badge-${task.status}">${getStatusLabel(task.status)}</span>
+                                <span class="item-badge badge-origin">${getTaskOriginLabel(task.origin || 'manual')}</span>
+                                ${task.responsible ? `<span class="item-responsible">${escapeHtml(task.responsible)}</span>` : ''}
+                            </div>
+                            <div class="item-dates">
+                                <span>${formatDate(task.date)}</span>
+                                <span class="${dClass}">${dText}</span>
+                            </div>
+                            <div class="feedback-actions">
+                                <button class="btn-inline is-ghost" id="task-details-trigger-${task.id}" onclick="toggleTaskDetails('${task.id}')">Ver detalhes</button>
+                                ${task.attachmentUrl ? `<button class="btn-inline is-ghost" onclick="openAttachment('${task.attachmentUrl}')">Anexo</button>` : ''}
+                            </div>
+                            ${renderTaskDetails(task)}
+                        </div>
+                        <div class="item-actions">
+                            <button class="btn-icon" onclick="editTask('${task.id}')" ${isViewOnly ? 'disabled' : ''}>Editar</button>
+                            <button class="btn-icon btn-delete" onclick="deleteTask('${task.id}')" ${isViewOnly ? 'disabled' : ''}>Excluir</button>
+                        </div>
+                    </div>`;
+            }).join('');
+
+            list.innerHTML = `<div class="items-list ${currentTaskView === 'list' ? 'task-list-view' : ''}">${currentTaskView === 'list' ? listHtml : cardsHtml}</div>`;
+        }
+
+        function renderKanban() {
+            const pendingColumn = document.getElementById('kanbanPending');
+            const progressColumn = document.getElementById('kanbanInProgress');
+            const completedColumn = document.getElementById('kanbanCompleted');
+            const completedWrapper = document.querySelector('.kanban-column.is-completed-column');
+            const completedToggle = document.getElementById('kanbanCompletedToggle');
+            if (!pendingColumn || !progressColumn || !completedColumn) return;
+
+            const groups = {
+                'pending': tasksData.filter(task => task.status === 'pending'),
+                'in-progress': tasksData.filter(task => task.status === 'in-progress'),
+                'completed': tasksData.filter(task => task.status === 'completed')
+            };
+
+            pendingColumn.innerHTML = renderKanbanColumnCards(groups['pending']);
+            progressColumn.innerHTML = renderKanbanColumnCards(groups['in-progress']);
+            completedColumn.innerHTML = renderKanbanColumnCards(groups['completed']);
+
+            document.getElementById('kanbanCountPending').textContent = groups['pending'].length;
+            document.getElementById('kanbanCountProgress').textContent = groups['in-progress'].length;
+            document.getElementById('kanbanCountCompleted').textContent = groups['completed'].length;
+
+            if (completedWrapper) completedWrapper.classList.toggle('is-collapsed', completedKanbanCollapsed);
+            if (completedToggle) completedToggle.textContent = completedKanbanCollapsed ? 'Mostrar' : 'Recolher';
+        }
+
+        function toggleCompletedKanban() {
+            completedKanbanCollapsed = !completedKanbanCollapsed;
+            renderKanban();
+        }
+
+        function renderKanbanColumnCards(items) {
+            if (!items.length) {
+                return '<div class="kanban-empty">Nenhuma tarefa nesta coluna</div>';
+            }
+
+            return items.map(task => `
+                <div class="kanban-card status-${task.status}" draggable="${isViewOnly ? 'false' : 'true'}" ondragstart="handleKanbanDragStart(event, '${task.id}')">
+                    <div class="kanban-card-title">${escapeHtml(task.description || 'Sem título')}</div>
+                    <div class="kanban-card-date">${formatDate(task.date)}${task.deadline ? ` • ${formatDate(task.deadline)}` : ''}</div>
+                </div>
+            `).join('');
+        }
+
+        function handleKanbanDragStart(event, id) {
+            currentDraggedTaskId = id;
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', id);
+        }
+
+        function handleKanbanDragOver(event) {
+            event.preventDefault();
+            const column = event.currentTarget.closest('.kanban-column');
+            if (column) column.classList.add('drag-over');
+        }
+
+        function handleKanbanDragLeave(event) {
+            const column = event.currentTarget.closest('.kanban-column');
+            if (column) column.classList.remove('drag-over');
+        }
+
+        async function handleKanbanDrop(event, newStatus) {
+            event.preventDefault();
+            const column = event.currentTarget.closest('.kanban-column');
+            if (column) column.classList.remove('drag-over');
+
+            const taskId = event.dataTransfer.getData('text/plain') || currentDraggedTaskId;
+            if (!taskId || isViewOnly) return;
+
+            const currentTask = tasksData.find(task => task.id === taskId);
+            if (!currentTask || currentTask.status === newStatus) return;
+
+            try {
+                const { error } = await supabaseClient
+                    .from('tarefas')
+                    .update({ status: newStatus })
+                    .eq('id', taskId);
+
+                if (error) throw error;
+
+                await loadTasks();
+            } catch (error) {
+                alert('Erro ao atualizar status da tarefa: ' + error.message);
+            } finally {
+                currentDraggedTaskId = null;
+            }
+        }
+
+        function filterMinutes() {
+            const term = document.getElementById('searchMinutes').value.toLowerCase();
+            const filtered = minutesData.filter(m => 
+                m.achievements.toLowerCase().includes(term) || 
+                (m.participants && m.participants.toLowerCase().includes(term)) || 
+                m.date.includes(term)
+            );
+            displayMinutes(filtered);
+        }
+
+        function displayMinutes(minutes) {
+            const list = document.getElementById('minutesList');
+            if (minutes.length === 0) {
+                list.innerHTML = '<div class="empty-state"><div class="empty-icon"></div><div class="empty-text">Nenhuma ata encontrada</div></div>';
+                return;
+            }
+
+            list.innerHTML = `<div class="items-list">${minutes.map(m => `
+                <div class="item-card">
+                    <div class="item-content">
+                        <div class="item-title">${formatDate(m.date)}</div>
+                        ${m.participants ? `<div class="item-description"><strong>Participantes:</strong> ${m.participants}</div>` : ''}
+                        <div class="item-description"><strong>ALINHAMENTOS:</strong><br>${m.achievements}</div>
+                        ${m.notes ? `<div class="item-description"><strong>OBS:</strong><br>${m.notes}</div>` : ''}
+                    </div>
+                    <div class="item-actions">
+                        <button class="btn-icon" onclick="editMinutes('${m.id}')" ${isViewOnly ? 'disabled' : ''}>Editar</button>
+                        <button class="btn-icon btn-delete" onclick="deleteMinutes('${m.id}')" ${isViewOnly ? 'disabled' : ''}>Excluir</button>
+                    </div>
+                </div>`).join('')}</div>`;
+        }
+
+        function displayTimeline() {
+            const container = document.getElementById('timelineContainer');
+            if (tasksData.length === 0) {
+                container.innerHTML = '<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-text">Sem tarefas para timeline</div></div>';
+                return;
+            }
+            const sorted = [...tasksData].sort((a, b) => new Date(a.date) - new Date(b.date));
+            container.innerHTML = `<div class="timeline">${sorted.map(t => `
+                <div class="timeline-item status-${t.status}">
+                    <div class="timeline-content">
+                        <div class="timeline-date">${formatDate(t.date)}</div>
+                        <div class="timeline-title">${t.description}</div>
+                        <div class="timeline-info">
+                            <span>${getStatusLabel(t.status)}</span>
+                            ${t.responsible ? `<span>•</span><span>${t.responsible}</span>` : ''}
+                        </div>
+                    </div>
+                </div>`).join('')}</div>`;
+        }
+
+        function updateDashboard() {
+            const total = tasksData.length;
+            const pending = tasksData.filter(t => t.status === 'pending').length;
+            const inProg = tasksData.filter(t => t.status === 'in-progress').length;
+            const done = tasksData.filter(t => t.status === 'completed').length;
+
+            document.getElementById('statTotal').textContent = total;
+            document.getElementById('statPending').textContent = pending;
+            document.getElementById('statInProgress').textContent = inProg;
+            document.getElementById('statCompleted').textContent = done;
+
+            updateCharts(pending, inProg, done);
+        }
+
+        function updateCharts(p, i, c) {
+            const ctxS = document.getElementById('statusChart').getContext('2d');
+            if (statusChart) statusChart.destroy();
+            statusChart = new Chart(ctxS, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Pendente', 'Andamento', 'Concluída'],
+                    datasets: [{ 
+                        data: [p, i, c], 
+                        backgroundColor: ['rgba(241,121,80,0.85)', 'rgba(120,81,124,0.88)', 'rgba(131,209,196,0.9)'],
+                        borderColor: ['#F17950', '#78517C', '#83D1C4'],
+                        borderWidth: 2
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    cutout: '50%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { padding: 18, font: { size: 12, weight: '600' }, color: '#5f6670', boxWidth: 14, boxHeight: 14 }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ===== EXPORTAÇÃO PDF PROFISSIONAL =====
+        function exportTasksToPDF() {
+            const doc = document.createElement('div');
+            doc.style.cssText = 'width: 190mm; padding: 15mm; font-family: Arial, sans-serif; color: #111827; page-break-after: always;';
+            
+            const header = `
+                <div style="text-align: center; margin-bottom: 15px; border-bottom: 3px solid #1e40af; padding-bottom: 10px;">
+                    <h1 style="color: #1e40af; margin: 0; font-size: 24px;">Sistema SESI Esporte</h1>
+                    <p style="color: #6b7280; margin: 5px 0 0 0; font-size: 12px;">Relatório de Tarefas</p>
+                    <p style="color: #9ca3af; margin: 5px 0 0 0; font-size: 11px;">Gerado em ${new Date().toLocaleDateString('pt-BR')}</p>
+                </div>
+            `;
+
+            const stats = `
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px;">
+                    <div style="background: #dbeafe; padding: 12px; border-radius: 8px; text-align: center;">
+                        <p style="color: #1e40af; font-weight: bold; font-size: 20px; margin: 0;">${tasksData.length}</p>
+                        <p style="color: #1e40af; font-size: 11px; margin: 3px 0 0 0;">Total</p>
+                    </div>
+                    <div style="background: #fef3c7; padding: 12px; border-radius: 8px; text-align: center;">
+                        <p style="color: #f59e0b; font-weight: bold; font-size: 20px; margin: 0;">${tasksData.filter(t => t.status === 'pending').length}</p>
+                        <p style="color: #f59e0b; font-size: 11px; margin: 3px 0 0 0;">Pendentes</p>
+                    </div>
+                    <div style="background: #dbeafe; padding: 12px; border-radius: 8px; text-align: center;">
+                        <p style="color: #1e40af; font-weight: bold; font-size: 20px; margin: 0;">${tasksData.filter(t => t.status === 'in-progress').length}</p>
+                        <p style="color: #1e40af; font-size: 11px; margin: 3px 0 0 0;">Andamento</p>
+                    </div>
+                    <div style="background: #d1fae5; padding: 12px; border-radius: 8px; text-align: center;">
+                        <p style="color: #10b981; font-weight: bold; font-size: 20px; margin: 0;">${tasksData.filter(t => t.status === 'completed').length}</p>
+                        <p style="color: #10b981; font-size: 11px; margin: 3px 0 0 0;">Concluídas</p>
+                    </div>
+                </div>
+            `;
+
+            const tasks = tasksData.map(t => `
+                <div style="background: #f9fafb; padding: 12px; margin-bottom: 12px; border-left: 4px solid #1e40af; border-radius: 4px; page-break-inside: avoid;">
+                    <h3 style="margin: 0 0 8px 0; color: #111827; font-size: 13px;">${t.description}</h3>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; font-size: 11px; color: #6b7280;">
+                        <p style="margin: 0;"><strong>Status:</strong> ${getStatusLabel(t.status)}</p>
+                                                <p style="margin: 0;"><strong>Data:</strong> ${formatDate(t.date)}</p>
+                        <p style="margin: 0;"><strong>Responsável:</strong> ${t.responsible || 'N/A'}</p>
+                    </div>
+                    ${t.notes ? `<p style="margin: 8px 0 0 0; font-size: 11px; color: #6b7280; font-style: italic;">${t.notes}</p>` : ''}
+                </div>
+            `).join('');
+
+            doc.innerHTML = header + stats + tasks;
+            
+            const opt = {
+                margin: [2, 10, 10, 10],
+                filename: `dashboard-sesi-${new Date().toISOString().slice(0, 10)}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().set(opt).from(doc).save();
+        }
+
+        function exportMinutesToPDF() {
+            const doc = document.createElement('div');
+            doc.style.cssText = 'width: 190mm; padding: 15mm; font-family: Arial, sans-serif; color: #111827; background: white;';
+            
+            const header = `
+                <div style="text-align: center; margin-bottom: 15px; border-bottom: 3px solid #1e40af; padding-bottom: 10px;">
+                    <h1 style="color: #1e40af; margin: 0; font-size: 24px;">Sistema SESI Esporte</h1>
+                    <p style="color: #6b7280; margin: 5px 0 0 0; font-size: 12px;">Atas de Reunião</p>
+                    <p style="color: #9ca3af; margin: 5px 0 0 0; font-size: 11px;">Gerado em ${new Date().toLocaleDateString('pt-BR')}</p>
+                </div>
+            `;
+
+            const atas = minutesData.map(m => `
+                <div style="background: #f9fafb; padding: 12px; margin-bottom: 15px; border-left: 4px solid #1e40af; border-radius: 4px; page-break-inside: avoid;">
+                    <h3 style="margin: 0 0 8px 0; color: #1e40af; font-size: 13px; font-weight: bold;">${formatDate(m.date)}</h3>
+                    ${m.participants ? `<p style="margin: 0 0 8px 0; font-size: 11px; color: #6b7280;"><strong>Participantes:</strong> ${m.participants}</p>` : ''}
+                    <div style="background: white; padding: 8px; border-radius: 4px; margin-bottom: 8px;">
+                        <p style="margin: 0; font-size: 11px; color: #111827;"><strong>Alinhamentos:</strong></p>
+                        <p style="margin: 4px 0 0 0; font-size: 11px; color: #6b7280; white-space: pre-wrap;">${m.achievements}</p>
+                    </div>
+                    ${m.notes ? `<p style="margin: 0; font-size: 11px; color: #6b7280;"><strong>Observações:</strong> ${m.notes}</p>` : ''}
+                </div>
+            `).join('');
+
+            doc.innerHTML = header + atas;
+            
+            const opt = {
+                margin: 10,
+                filename: `atas-sesi-${new Date().toISOString().slice(0, 10)}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().set(opt).from(doc).save();
+        }
+
+        function exportDashboardToPDF() {
+            const doc = document.createElement('div');
+            doc.style.cssText = 'width: 190mm; padding: 15mm; font-family: Arial, sans-serif; color: #111827; background: white;';
+            
+            const total = tasksData.length;
+            const pending = tasksData.filter(t => t.status === 'pending').length;
+            const inProg = tasksData.filter(t => t.status === 'in-progress').length;
+            const done = tasksData.filter(t => t.status === 'completed').length;
+
+            const header = `
+                <div style="text-align: center; margin-bottom: 15px; border-bottom: 3px solid #1e40af; padding-bottom: 10px;">
+                    <h1 style="color: #1e40af; margin: 0; font-size: 24px;">Sistema SESI Esporte</h1>
+                    <p style="color: #6b7280; margin: 5px 0 0 0; font-size: 12px;">Dashboard de Progresso</p>
+                    <p style="color: #9ca3af; margin: 5px 0 0 0; font-size: 11px;">Gerado em ${new Date().toLocaleDateString('pt-BR')}</p>
+                </div>
+            `;
+
+            const stats = `
+                <div style="margin-bottom: 20px;">
+                    <h2 style="color: #1e40af; font-size: 16px; margin: 0 0 12px 0; border-bottom: 2px solid #1e40af; padding-bottom: 8px;">Estatísticas Gerais</h2>
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
+                        <div style="background: #dbeafe; padding: 12px; border-radius: 8px; text-align: center;">
+                            <p style="color: #1e40af; font-weight: bold; font-size: 24px; margin: 0;">${total}</p>
+                            <p style="color: #1e40af; font-size: 11px; margin: 3px 0 0 0;">Total de Tarefas</p>
+                        </div>
+                        <div style="background: #fef3c7; padding: 12px; border-radius: 8px; text-align: center;">
+                            <p style="color: #f59e0b; font-weight: bold; font-size: 24px; margin: 0;">${pending}</p>
+                            <p style="color: #f59e0b; font-size: 11px; margin: 3px 0 0 0;">Pendentes</p>
+                        </div>
+                        <div style="background: #dbeafe; padding: 12px; border-radius: 8px; text-align: center;">
+                            <p style="color: #1e40af; font-weight: bold; font-size: 24px; margin: 0;">${inProg}</p>
+                            <p style="color: #1e40af; font-size: 11px; margin: 3px 0 0 0;">Em Andamento</p>
+                        </div>
+                        <div style="background: #d1fae5; padding: 12px; border-radius: 8px; text-align: center;">
+                            <p style="color: #10b981; font-weight: bold; font-size: 24px; margin: 0;">${done}</p>
+                            <p style="color: #10b981; font-size: 11px; margin: 3px 0 0 0;">Concluídas</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            doc.innerHTML = header + stats;
+            
+            const opt = {
+                margin: 10,
+                filename: `dashboard-sesi-${new Date().toISOString().slice(0, 10)}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().set(opt).from(doc).save();
+        }
+
+        function exportTasksToCSV() {
+            let csv = 'Tarefa,Responsável,Status,Criação,Entrega,Obs\n';
+            tasksData.forEach(t => {
+                csv += `"${t.description}","${t.responsible||''}","${getStatusLabel(t.status)}","${formatDate(t.date)}","${formatDate(t.deadline)}","${t.notes||''}"\n`;
+            });
+            downloadFile(csv, 'tarefas.csv', 'text/csv');
+        }
+
+        function exportMinutesToCSV() {
+            let csv = 'Data,Participantes,Alinhamentos,Obs\n';
+            minutesData.forEach(m => {
+                csv += `"${formatDate(m.date)}","${m.participants||''}","${m.achievements}","${m.notes||''}"\n`;
+            });
+            downloadFile(csv, 'atas.csv', 'text/csv');
+        }
+
+
+        function renderTaskAttachmentState() {
+            const container = document.getElementById('taskAttachmentCurrent');
+            if (!container) return;
+            if (currentTaskAttachmentUrl) {
+                container.innerHTML = `<button type="button" class="btn-inline" onclick="openAttachment('${currentTaskAttachmentUrl}')">Anexo atual: ${escapeHtml(currentTaskAttachmentName || 'abrir')}</button>`;
+            } else {
+                container.innerHTML = '';
+            }
+        }
+
+        function renderFeedbackTaskAttachmentState(feedback) {
+            const container = document.getElementById('feedbackTaskAttachmentCurrent');
+            if (!container) return;
+            if (feedback && feedback.anexo_url) {
+                container.innerHTML = `<button type="button" class="btn-inline" onclick="openAttachment('${feedback.anexo_url}')">Anexo atual: ${escapeHtml(feedback.anexo_nome || 'abrir')}</button>`;
+            } else {
+                container.innerHTML = '';
+            }
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function stripHtml(value) {
+            return String(value ?? '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+        }
+
+        function truncateText(value, maxLength = 120) {
+            const text = String(value ?? '');
+            return text.length > maxLength ? text.slice(0, maxLength).trim() + '…' : text;
+        }
+
+        function formatDateTime(value) {
+            if (!value) return '';
+            return new Date(value).toLocaleString('pt-BR');
+        }
+
+        function mapFeedbackStatusClass(status) {
+            const map = { novo: 'pending', em_analise: 'in-progress', transformado_em_tarefa: 'completed', arquivado: 'completed' };
+            return map[status] || 'pending';
+        }
+
+        function mapFeedbackBadgeClass(status) {
+            const map = { novo: 'pending', em_analise: 'in-progress', transformado_em_tarefa: 'completed', arquivado: 'completed' };
+            return map[status] || 'pending';
+        }
+
+        function getFeedbackStatusLabel(status) {
+            const map = { novo: 'Novo', em_analise: 'Em análise', transformado_em_tarefa: 'Transformado em tarefa', arquivado: 'Arquivado' };
+            return map[status] || status;
+        }
+
+        // ===== UTILITÁRIOS =====
+        function formatDate(ds) { if(!ds) return ''; const d = new Date(ds + 'T00:00:00'); return d.toLocaleDateString('pt-BR'); }
+        function getStatusLabel(s) { const m = { 'pending': 'Pendente', 'in-progress': 'Em Andamento', 'completed': 'Concluída' }; return m[s] || s; }
+        function updateTotalTasks(t) { document.getElementById('totalTasks').textContent = t.length; }
+        function updateTasksInfo(t) {
+            const p = t.filter(x => x.status === 'in-progress').length;
+            const c = t.filter(x => x.status === 'completed').length;
+            document.getElementById('tasksInfo').textContent = `${t.length} total • ${p} em andamento • ${c} concluídas`;
+        }
+        function downloadFile(c, f, t) {
+            const e = document.createElement('a');
+            e.setAttribute('href', 'data:' + t + ';charset=utf-8,' + encodeURIComponent(c));
+            e.setAttribute('download', f); e.click();
+        }
+
+        window.onclick = function(e) {
+            if (e.target === document.getElementById('taskModal')) closeTaskModal();
+            if (e.target === document.getElementById('minutesModal')) closeMinutesModal();
+            if (e.target === document.getElementById('feedbackDetailsModal')) closeFeedbackDetailsModal();
+            if (e.target === document.getElementById('feedbackTaskModal')) closeFeedbackTaskModal();
+        };
+    </script>
+</body>
+</html>
