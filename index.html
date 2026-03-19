@@ -792,6 +792,104 @@
             .home-actions { flex-direction: column; }
             .home-btn-primary, .home-btn-secondary { width: 100%; min-width: 0; }
         }
+    
+        .quick-actions {
+            display:flex;
+            gap:8px;
+            align-items:center;
+            flex-wrap:nowrap;
+        }
+        .quick-icon-btn {
+            width:34px;
+            height:34px;
+            border-radius:10px;
+            border:1px solid var(--border);
+            background:#fff;
+            color:#5b6470;
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            cursor:pointer;
+            transition:.2s ease;
+            font-size:15px;
+            font-weight:700;
+            line-height:1;
+        }
+        .quick-icon-btn:hover:not(:disabled) {
+            background:#f3f4f6;
+            transform:translateY(-1px);
+        }
+        .quick-icon-btn:disabled {
+            opacity:.45;
+            cursor:not-allowed;
+        }
+        .task-list-view .item-content {
+            grid-template-columns: minmax(320px, 1.8fr) minmax(140px, .8fr) minmax(130px, .8fr) 88px;
+        }
+        .task-list-view .quick-actions {
+            justify-content:center;
+        }
+        .feedback-view-toggle-wrap {
+            display:flex;
+            justify-content:flex-end;
+            margin-top:-4px;
+            margin-bottom:16px;
+        }
+        .feedback-list-view .item-card {
+            padding:14px 18px 14px 20px;
+        }
+        .feedback-list-view .item-content {
+            display:grid;
+            grid-template-columns: minmax(280px, 1.6fr) minmax(140px, .75fr) minmax(180px, .9fr) 94px auto;
+            gap:14px;
+            align-items:center;
+        }
+        .feedback-list-view .item-title,
+        .feedback-list-view .item-meta,
+        .feedback-list-view .item-dates {
+            margin-bottom:0;
+        }
+        .feedback-list-view .item-description {
+            display:none;
+        }
+        .feedback-list-view .feedback-actions {
+            margin-top:0;
+            justify-content:flex-start;
+        }
+        .feedback-list-view .feedback-actions .btn-inline {
+            display:none;
+        }
+        .feedback-list-view .feedback-quick-actions {
+            display:flex;
+        }
+        .feedback-quick-actions {
+            display:none;
+            gap:8px;
+            align-items:center;
+            justify-content:center;
+        }
+        .kanban-card-actions {
+            display:flex;
+            gap:8px;
+            margin-top:10px;
+        }
+        .kanban-card-actions .quick-icon-btn {
+            width:30px;
+            height:30px;
+            border-radius:9px;
+            font-size:14px;
+        }
+
+    
+        .feedback-rich-text {
+            background: linear-gradient(180deg, rgba(248,248,249,.98), rgba(255,255,255,.98));
+            border: 1px solid #e2e4e8;
+            border-radius: 16px;
+            padding: 14px 16px;
+            color: #5d6572;
+            font-size: .92rem;
+            line-height: 1.65;
+        }
     </style>
 </head>
 <body>
@@ -1061,6 +1159,13 @@
                         </select>
                     </div>
 
+                    <div class="feedback-view-toggle-wrap">
+                        <div class="view-toggle" aria-label="Modo de visualização do feedback">
+                            <button type="button" class="view-toggle-btn active" id="feedbackViewCardsBtn" onclick="setFeedbackViewMode('cards')">Cards</button>
+                            <button type="button" class="view-toggle-btn" id="feedbackViewListBtn" onclick="setFeedbackViewMode('list')">Lista</button>
+                        </div>
+                    </div>
+
                     <div id="feedbackList">
                         <div class="empty-state">
                             <div class="empty-icon"></div>
@@ -1272,6 +1377,91 @@
         </div>
     </div>
 
+
+    <!-- Modal para Detalhes da Tarefa -->
+    <div class="modal" id="taskDetailsModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeTaskDetailsModal()">✕</button>
+            <div class="modal-title">Detalhes da Tarefa</div>
+            <div id="taskDetailsContent"></div>
+        </div>
+    </div>
+
+    <!-- Modal para Editar Feedback -->
+    <div class="modal" id="feedbackEditModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeFeedbackEditModal()">✕</button>
+            <div class="modal-title">Editar Feedback</div>
+            <form id="feedbackEditForm" onsubmit="saveFeedbackEdit(event)">
+                <div class="form-group required">
+                    <label>Título</label>
+                    <input type="text" id="feedbackEditTitle" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group required">
+                        <label>Status</label>
+                        <select id="feedbackEditStatus" required>
+                            <option value="novo">Novo</option>
+                            <option value="em_analise">Em análise</option>
+                            <option value="transformado_em_tarefa">Transformado em tarefa</option>
+                            <option value="arquivado">Arquivado</option>
+                        </select>
+                    </div>
+                    <div class="form-group required">
+                        <label>Prioridade</label>
+                        <select id="feedbackEditPriority" required>
+                            <option value="Baixa">Baixa</option>
+                            <option value="Média">Média</option>
+                            <option value="Alta">Alta</option>
+                            <option value="Crítica">Crítica</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group required">
+                        <label>Tipo</label>
+                        <select id="feedbackEditType" required>
+                            <option value="Erro">Erro</option>
+                            <option value="Melhoria">Melhoria</option>
+                            <option value="Dúvida">Dúvida</option>
+                            <option value="Sugestão">Sugestão</option>
+                            <option value="Outro">Outro</option>
+                        </select>
+                    </div>
+                    <div class="form-group required">
+                        <label>Funcionalidade</label>
+                        <select id="feedbackEditFunctionality" required>
+                            <option value="Avalia">Avalia</option>
+                            <option value="Chamada">Chamada</option>
+                            <option value="Login">Login</option>
+                            <option value="Planejamento Semestral">Planejamento Semestral</option>
+                            <option value="Outra">Outra</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group required">
+                        <label>Nome do responsável</label>
+                        <input type="text" id="feedbackEditResponsible" required>
+                    </div>
+                    <div class="form-group required">
+                        <label>Unidade</label>
+                        <input type="text" id="feedbackEditUnit" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Link relacionado</label>
+                    <input type="url" id="feedbackEditLink">
+                </div>
+                <div class="form-group required">
+                    <label>Descrição</label>
+                    <textarea id="feedbackEditDescription" required></textarea>
+                </div>
+                <button type="submit" class="btn-submit">Salvar Feedback</button>
+            </form>
+        </div>
+    </div>
+
     <script>
         // Configurações do Supabase
         const PROJECT_URL = "https://wgbdbazajqswszhzzodt.supabase.co";
@@ -1292,7 +1482,9 @@
         let currentTaskAttachmentUrl = null;
         let currentTaskAttachmentName = null;
         let currentTaskView = 'cards';
+        let currentFeedbackView = 'cards';
         let completedKanbanCollapsed = false;
+        let editingFeedbackId = null;
 
 
         document.addEventListener('DOMContentLoaded', async function() {
@@ -1659,7 +1851,7 @@
                 return;
             }
 
-            list.innerHTML = `<div class="items-list">${items.map(feedback => {
+            const cardsHtml = items.map(feedback => {
                 const preview = truncateText(stripHtml(feedback.descricao || ''), 240);
                 return `
                     <div class="item-card status-${mapFeedbackStatusClass(feedback.status)}">
@@ -1672,7 +1864,7 @@
                                 <span class="item-badge badge-phase">${escapeHtml(feedback.prioridade || '—')}</span>
                             </div>
                             <div class="item-dates">
-                                <span>🏢 ${escapeHtml(feedback.unidade || '—')}</span>
+                                <span>${escapeHtml(feedback.unidade || '—')}</span>
                                 <span>${escapeHtml(feedback.nome_responsavel || '—')}</span>
                                 <span>${formatDateTime(feedback.created_at)}</span>
                             </div>
@@ -1681,12 +1873,41 @@
                                 <button class="btn-inline" onclick="openFeedbackDetailsModal('${feedback.id}')">Ver detalhes</button>
                                 ${feedback.link_relacionado ? `<a class="btn-inline" href="${feedback.link_relacionado}" target="_blank" rel="noopener noreferrer">Abrir link</a>` : ''}
                                 ${feedback.anexo_url ? `<button class="btn-inline" onclick="openAttachment('${feedback.anexo_url}')">Ver anexo</button>` : ''}
+                                <button class="btn-inline" onclick="openFeedbackEditModal('${feedback.id}')" ${isViewOnly ? 'disabled' : ''}>Editar</button>
+                                <button class="btn-inline danger" onclick="deleteFeedback('${feedback.id}')" ${isViewOnly ? 'disabled' : ''}>Excluir</button>
                                 <button class="btn-inline danger" onclick="archiveFeedback('${feedback.id}')" ${isViewOnly || feedback.status === 'arquivado' ? 'disabled' : ''}>Arquivar</button>
                                 <button class="btn-inline" onclick="openFeedbackTaskModal('${feedback.id}')" ${isViewOnly || feedback.status === 'transformado_em_tarefa' ? 'disabled' : ''}>Transformar em tarefa</button>
                             </div>
                         </div>
                     </div>`;
-            }).join('')}</div>`;
+            }).join('');
+
+            const listHtml = items.map(feedback => `
+                <div class="item-card status-${mapFeedbackStatusClass(feedback.status)}">
+                    <div class="item-content">
+                        <div class="item-title">${escapeHtml(feedback.titulo || 'Sem título')}</div>
+                        <div class="item-meta">
+                            <span class="item-badge badge-${mapFeedbackBadgeClass(feedback.status)}">${getFeedbackStatusLabel(feedback.status)}</span>
+                            <span class="item-badge badge-phase">${escapeHtml(feedback.tipo_apontamento || '—')}</span>
+                        </div>
+                        <div class="item-dates">
+                            <span>${escapeHtml(feedback.unidade || '—')}</span>
+                            <span>${formatDateTime(feedback.created_at)}</span>
+                        </div>
+                        <div class="feedback-quick-actions">
+                            <button class="quick-icon-btn" title="Ver detalhes" onclick="openFeedbackDetailsModal('${feedback.id}')">ⓘ</button>
+                            ${feedback.link_relacionado ? `<a class="quick-icon-btn" title="Abrir link" href="${feedback.link_relacionado}" target="_blank" rel="noopener noreferrer">↗</a>` : `<span style="width:34px;height:34px;display:inline-block;"></span>`}
+                            ${feedback.anexo_url ? `<button class="quick-icon-btn" title="Ver anexo" onclick="openAttachment('${feedback.anexo_url}')">📎</button>` : `<span style="width:34px;height:34px;display:inline-block;"></span>`}
+                        </div>
+                    </div>
+                    <div class="item-actions">
+                        <button class="btn-icon" onclick="openFeedbackEditModal('${feedback.id}')" ${isViewOnly ? 'disabled' : ''}>Editar</button>
+                        <button class="btn-icon btn-delete" onclick="deleteFeedback('${feedback.id}')" ${isViewOnly ? 'disabled' : ''}>Excluir</button>
+                    </div>
+                </div>
+            `).join('');
+
+            list.innerHTML = `<div class="items-list ${currentFeedbackView === 'list' ? 'feedback-list-view' : ''}">${currentFeedbackView === 'list' ? listHtml : cardsHtml}</div>`;
         }
 
         function openFeedbackDetailsModal(id) {
@@ -1752,6 +1973,77 @@
 
         function closeFeedbackDetailsModal() {
             document.getElementById('feedbackDetailsModal').classList.remove('active');
+        }
+
+        function openFeedbackEditModal(id) {
+            if (isViewOnly) return;
+            const feedback = feedbackData.find(item => item.id === id);
+            if (!feedback) return;
+            editingFeedbackId = id;
+            document.getElementById('feedbackEditTitle').value = feedback.titulo || '';
+            document.getElementById('feedbackEditStatus').value = feedback.status || 'novo';
+            document.getElementById('feedbackEditPriority').value = feedback.prioridade || 'Baixa';
+            document.getElementById('feedbackEditType').value = feedback.tipo_apontamento || 'Outro';
+            document.getElementById('feedbackEditFunctionality').value = feedback.funcionalidade || 'Outra';
+            document.getElementById('feedbackEditResponsible').value = feedback.nome_responsavel || '';
+            document.getElementById('feedbackEditUnit').value = feedback.unidade || '';
+            document.getElementById('feedbackEditLink').value = feedback.link_relacionado || '';
+            document.getElementById('feedbackEditDescription').value = stripHtml(feedback.descricao || '');
+            document.getElementById('feedbackEditModal').classList.add('active');
+        }
+
+        function closeFeedbackEditModal() {
+            document.getElementById('feedbackEditModal').classList.remove('active');
+            document.getElementById('feedbackEditForm').reset();
+            editingFeedbackId = null;
+        }
+
+        async function saveFeedbackEdit(event) {
+            event.preventDefault();
+            if (!editingFeedbackId || isViewOnly) return;
+
+            try {
+                const payload = {
+                    titulo: document.getElementById('feedbackEditTitle').value,
+                    status: document.getElementById('feedbackEditStatus').value,
+                    prioridade: document.getElementById('feedbackEditPriority').value,
+                    tipo_apontamento: document.getElementById('feedbackEditType').value,
+                    funcionalidade: document.getElementById('feedbackEditFunctionality').value,
+                    nome_responsavel: document.getElementById('feedbackEditResponsible').value,
+                    unidade: document.getElementById('feedbackEditUnit').value,
+                    link_relacionado: document.getElementById('feedbackEditLink').value || null,
+                    descricao: document.getElementById('feedbackEditDescription').value
+                };
+
+                const { error } = await supabaseClient
+                    .from('feedback_piloto')
+                    .update(payload)
+                    .eq('id', editingFeedbackId);
+
+                if (error) throw error;
+
+                closeFeedbackEditModal();
+                await loadFeedback();
+            } catch (error) {
+                alert('Erro ao salvar feedback: ' + error.message);
+            }
+        }
+
+        async function deleteFeedback(id) {
+            if (isViewOnly) return;
+            if (!confirm('Deseja excluir este feedback?')) return;
+
+            try {
+                const { error } = await supabaseClient
+                    .from('feedback_piloto')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+                await loadFeedback();
+            } catch (error) {
+                alert('Erro ao excluir feedback: ' + error.message);
+            }
         }
 
         async function archiveFeedback(id) {
@@ -2225,9 +2517,9 @@
                                 <span>${formatDate(task.date)}</span>
                                 ${dText ? `<span class="${dClass}">${dText}</span>` : ''}
                             </div>
-                            <div class="feedback-actions" style="margin-top:12px;">
-                                <button class="btn-inline is-ghost" id="task-details-trigger-${task.id}" onclick="toggleTaskDetails('${task.id}')">Ver detalhes</button>
-                                ${task.attachmentUrl ? `<button class="btn-inline is-ghost" onclick="openAttachment('${task.attachmentUrl}')">Anexo</button>` : ''}
+                            <div class="quick-actions" style="margin-top:12px;">
+                                <button class="quick-icon-btn" title="Ver detalhes" id="task-details-trigger-${task.id}" onclick="toggleTaskDetails('${task.id}')">ⓘ</button>
+                                ${task.attachmentUrl ? `<button class="quick-icon-btn" title="Ver anexo" onclick="openAttachment('${task.attachmentUrl}')">📎</button>` : `<span style="width:34px;height:34px;display:inline-block;"></span>`}
                             </div>
                             ${renderTaskDetails(task)}
                         </div>
@@ -2262,9 +2554,9 @@
                                 <span>${formatDate(task.date)}</span>
                                 <span class="${dClass}">${dText}</span>
                             </div>
-                            <div class="feedback-actions">
-                                <button class="btn-inline is-ghost" id="task-details-trigger-${task.id}" onclick="toggleTaskDetails('${task.id}')">Ver detalhes</button>
-                                ${task.attachmentUrl ? `<button class="btn-inline is-ghost" onclick="openAttachment('${task.attachmentUrl}')">Anexo</button>` : ''}
+                            <div class="quick-actions">
+                                <button class="quick-icon-btn" title="Ver detalhes" id="task-details-trigger-${task.id}" onclick="toggleTaskDetails('${task.id}')">ⓘ</button>
+                                ${task.attachmentUrl ? `<button class="quick-icon-btn" title="Ver anexo" onclick="openAttachment('${task.attachmentUrl}')">📎</button>` : `<span style="width:34px;height:34px;display:inline-block;"></span>`}
                             </div>
                             ${renderTaskDetails(task)}
                         </div>
@@ -2318,6 +2610,10 @@
                 <div class="kanban-card status-${task.status}" draggable="${isViewOnly ? 'false' : 'true'}" ondragstart="handleKanbanDragStart(event, '${task.id}')">
                     <div class="kanban-card-title">${escapeHtml(task.description || 'Sem título')}</div>
                     <div class="kanban-card-date">${formatDate(task.date)}${task.deadline ? ` • ${formatDate(task.deadline)}` : ''}</div>
+                    <div class="kanban-card-actions">
+                        <button class="quick-icon-btn" title="Ver detalhes" onclick="event.stopPropagation(); openTaskDetailsModal('${task.id}')">ⓘ</button>
+                        ${task.attachmentUrl ? `<button class="quick-icon-btn" title="Ver anexo" onclick="event.stopPropagation(); openAttachment('${task.attachmentUrl}')">📎</button>` : `<span style="width:30px;height:30px;display:inline-block;"></span>`}
+                    </div>
                 </div>
             `).join('');
         }
