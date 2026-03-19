@@ -207,6 +207,8 @@
         .item-card.status-pending::before { background: linear-gradient(180deg, #F17950, #E46C43); }
         .item-card.status-in-progress::before { background: linear-gradient(180deg, #78517C, #66446A); }
         .item-card.status-completed::before { background: linear-gradient(180deg, #83D1C4, #6EC0B1); }
+        .item-card.status-transformed::before { background: linear-gradient(180deg, #78517C, #66446A); }
+        .item-card.status-archived::before { background: linear-gradient(180deg, #d1d5db, #b9bec7); }
         .item-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
         .item-content { flex: 1; min-width:0; }
         .item-title {
@@ -225,6 +227,8 @@
         .badge-in-progress { background: rgba(120,81,124,.14); color: #6B486E; border-color: rgba(120,81,124,.22); }
         .badge-completed { background: rgba(131,209,196,.18); color: #4E9389; border-color: rgba(131,209,196,.25); }
         .badge-phase { background: #f6f6f7; color:#5d7085; }
+        .badge-transformed { background: rgba(120,81,124,.14); color: #6B486E; border-color: rgba(120,81,124,.22); }
+        .badge-archived { background: #eeeeee; color: #616161; border-color: #d7d7d7; }
         .item-dates { color: var(--text-secondary); font-size: .83rem; font-weight: 600; }
         .date-warning { color: var(--warning); font-weight: 800; }
         .date-overdue { color: var(--error); font-weight: 800; }
@@ -1424,6 +1428,13 @@
             }
         }
 
+        function sanitizeFileName(fileName) {
+            return fileName
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-zA-Z0-9.\-_]/g, '_');
+        }
+
         async function saveTask(event) {
             event.preventDefault();
             if (isViewOnly) return;
@@ -2095,16 +2106,16 @@
         function mapFeedbackStatusClass(status) {
             if (status === 'novo') return 'in-progress';
             if (status === 'em_analise') return 'pending';
-            if (status === 'transformado_em_tarefa') return 'completed';
-            if (status === 'arquivado') return 'pending';
+            if (status === 'transformado_em_tarefa') return 'transformed';
+            if (status === 'arquivado') return 'archived';
             return 'pending';
         }
 
         function mapFeedbackBadgeClass(status) {
             if (status === 'novo') return 'in-progress';
             if (status === 'em_analise') return 'pending';
-            if (status === 'transformado_em_tarefa') return 'completed';
-            if (status === 'arquivado') return 'phase';
+            if (status === 'transformado_em_tarefa') return 'transformed';
+            if (status === 'arquivado') return 'archived';
             return 'phase';
         }
 
