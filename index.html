@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -230,8 +231,9 @@
         .badge-transformed { background: rgba(120,81,124,.14); color: #6B486E; border-color: rgba(120,81,124,.22); }
         .badge-archived { background: #eeeeee; color: #616161; border-color: #d7d7d7; }
         .item-dates { color: var(--text-secondary); font-size: .83rem; font-weight: 600; }
-        .date-warning { color: var(--warning); font-weight: 800; }
-        .date-overdue { color: var(--error); font-weight: 800; }
+        .date-warning { color: #ad8a2b; font-weight: 700; }
+        .date-on-track { color: #5e8f74; font-weight: 700; }
+        .date-overdue { color: #bf6d74; font-weight: 700; }
         .item-description {
             background: linear-gradient(180deg, rgba(248,248,249,.98), rgba(255,255,255,.98));
             border: 1px solid #e2e4e8; border-radius: 16px; padding: 14px 16px;
@@ -890,6 +892,552 @@
             font-size: .92rem;
             line-height: 1.65;
         }
+    
+        /* ===== RECUPERAÇÃO VISUAL APROVADA ===== */
+        body.view-only-mode .btn-backup,
+        body.view-only-mode #importFile { display:none !important; }
+        body.view-only-mode .header-right { padding-right: 300px; }
+        body.view-only-mode .auth-badge { right: 24px; top: 12px; }
+        .header-right {
+            display:flex; align-items:center; gap:12px; flex-wrap:nowrap; justify-content:flex-end;
+            padding-right: 240px; min-width: 0;
+        }
+        .header-stats { flex: 0 0 auto; }
+        .header-actions { display:flex; align-items:center; gap:12px; flex-wrap:nowrap; margin-right: 6px; }
+        .auth-badge { min-width: 188px; text-align:center; z-index: 40; }
+        @media (max-width: 1200px) {
+            .header-right { padding-right: 0; flex-wrap:wrap; }
+            .auth-badge { position: fixed; }
+        }
+
+        .controls.is-two-rows {
+            display:flex; flex-direction:column; gap:12px; align-items:stretch;
+        }
+        .filter-row {
+            display:grid; gap:12px; align-items:end;
+        }
+        .filter-row.tasks-row {
+            grid-template-columns: minmax(320px,1.25fr) minmax(220px,.72fr) minmax(220px,.72fr) minmax(120px,.34fr);
+        }
+        .filter-row.feedback-row {
+            grid-template-columns: repeat(4, minmax(180px,1fr)) minmax(120px,.34fr);
+        }
+        .filter-row.minutes-row {
+            grid-template-columns: 1fr auto;
+        }
+        .filter-group { min-width:0; }
+        .filter-group label,
+        .mini-label {
+            display:block; margin:0 0 7px 6px; font-size:.72rem; font-weight:800; letter-spacing:.12em;
+            text-transform:uppercase; color:#8b91a0;
+        }
+        .filter-group .select-box,
+        .filter-group .search-box,
+        .filter-group .search-box input,
+        .filter-group .status-multi-filter,
+        .filter-group .export-btn-subtle,
+        .filter-group .btn-export-compact {
+            width:100%;
+        }
+        .task-status-group .status-multi-filter {
+            display:grid; grid-template-columns: repeat(3, minmax(110px,1fr)); gap:10px;
+        }
+        .task-status-group .status-filter-chip { width:100%; }
+        .task-status-group .status-filter-chip span { width:100%; min-height:40px; font-size:.76rem; letter-spacing:.05em; padding:0 8px; }
+        .controls.is-two-rows .search-box input { min-height:56px; }
+        .view-toggle, .feedback-view-toggle-wrap { display:none !important; }
+        .btn-export-compact,
+        .export-btn-subtle {
+            min-height:44px; border-radius:16px; border:1px solid #d9dde4; background:#f5f6f8; color:#334155;
+            font-size:.92rem; font-weight:800; cursor:pointer; padding:0 18px; white-space:nowrap;
+        }
+        .export-btn-subtle.is-small { min-width:118px; min-height:38px; padding:0 14px; font-size:.88rem; }
+        .export-slot-right { justify-self:end; width:auto; }
+        .export-slot-right .filter-group { width:auto; min-width:132px; }
+
+        .task-list-view .item-card,
+        .feedback-list-view .item-card {
+            padding:10px 14px;
+        }
+        .data-grid,
+        .feedback-grid {
+            display:grid; gap:10px; align-items:center;
+        }
+        .data-grid {
+            grid-template-columns: minmax(360px,3fr) minmax(108px,.7fr) minmax(110px,.75fr) minmax(110px,.72fr) minmax(105px,.72fr) minmax(108px,.75fr) 84px auto;
+        }
+        .feedback-grid {
+            grid-template-columns: minmax(360px,2.6fr) minmax(160px,.95fr) minmax(220px,1.25fr) 92px auto;
+        }
+        .field-stack { min-width:0; }
+        .field-label {
+            display:block; margin-bottom:2px; font-size:.58rem; font-weight:800; letter-spacing:.09em;
+            text-transform:uppercase; color:#99a0ad;
+        }
+        .field-value {
+            color:#232427; font-weight:700; font-size:.84rem; line-height:1.2;
+        }
+        .field-stack .item-meta,
+        .field-stack .item-dates { margin-bottom:0; }
+        .field-stack .item-meta { gap:8px; }
+        .field-stack .stacked-meta { display:flex; flex-wrap:wrap; gap:8px; }
+        .field-stack .stacked-lines { display:flex; flex-direction:column; gap:5px; }
+        .field-stack .stacked-lines .item-badge { width:max-content; max-width:100%; }
+        .field-stack .field-date-stack { display:flex; flex-direction:column; gap:5px; }
+        .field-stack .field-date-stack .field-value { font-size:.92rem; }
+        .quick-actions,
+        .feedback-quick-actions { display:flex; gap:5px; align-items:center; justify-content:flex-start; }
+        .quick-icon-btn { width:28px; height:28px; border-radius:9px; flex: 0 0 28px; overflow:hidden; }
+        .item-actions { display:flex; flex-direction:row; gap:8px; align-items:center; }
+        .item-actions .btn-icon { min-width:86px; min-height:32px; font-size:.8rem; }
+        .feedback-secondary-actions {
+            display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;
+        }
+        .feedback-secondary-actions .btn-inline { min-height:38px; }
+        .feedback-secondary-actions .btn-inline.archived-state { background:#f1f3f5; color:#6b7280; border-color:#d9dde4; }
+        .feedback-secondary-actions .btn-inline.transformed-state { background:#ecf8f4; color:#188b5a; border-color:#caecd9; }
+        .badge-archived { background:#f1f3f5; color:#6b7280; border-color:#d9dde4; }
+        .badge-transformed { background:#ecf8f4; color:#188b5a; border-color:#caecd9; }
+        .minutes-controls-right { display:flex; justify-content:flex-end; }
+        .compact-main .field-value { font-size:.92rem; }
+        .compact-inline-badges { display:flex; flex-wrap:wrap; gap:4px; }
+        .compact-stack { display:flex; flex-direction:column; gap:4px; }
+        .compact-date { font-size:.82rem; }
+        .compact-actions-wrap { min-width:0; }
+        .compact-task-grid .field-stack,
+        .compact-feedback-grid .field-stack { min-width:0; }
+        .compact-feedback-grid .feedback-secondary-actions {
+            margin-top:6px;
+            gap:6px;
+        }
+        .compact-feedback-grid .feedback-secondary-actions .btn-inline {
+            min-height:30px;
+            padding:0 10px;
+            font-size:.78rem;
+        }
+        .compact-feedback-grid .field-value,
+        .compact-task-grid .field-value { word-break:break-word; }
+        .compact-task-grid .item-badge,
+        .compact-feedback-grid .item-badge { padding:5px 10px; font-size:.76rem; }
+        .compact-task-grid .field-stack,
+        .compact-feedback-grid .field-stack { gap:0; }
+
+        @media (max-width: 1380px) {
+            .data-grid { grid-template-columns: minmax(320px,2.4fr) repeat(3, minmax(100px,.82fr)) minmax(96px,.7fr) minmax(110px,.75fr) 84px auto; }
+            .feedback-grid { grid-template-columns: minmax(320px,2.2fr) minmax(150px,.9fr) minmax(190px,1.1fr) 92px auto; }
+        }
+        @media (max-width: 1180px) {
+            .filter-row.tasks-row,
+            .filter-row.feedback-row,
+            .filter-row.minutes-row,
+            .data-grid,
+            .feedback-grid { grid-template-columns: 1fr; }
+            .export-slot-right, .minutes-controls-right { justify-self:stretch; }
+            .export-slot-right .filter-group { width:100%; }
+            .item-actions { flex-wrap:wrap; }
+        }
+
+    
+        /* ===== Etapa 14 | compactação segura ===== */
+        .status-filter-chip span{
+            min-height:40px;
+            padding:0 11px;
+            font-size:.76rem;
+            letter-spacing:.06em;
+        }
+        .items-list{ gap:10px; }
+        .item-card{
+            border-radius:18px;
+            padding:14px 15px 14px 18px;
+            gap:12px;
+        }
+        .item-card::before{
+            width:5px;
+            border-radius:18px 0 0 18px;
+        }
+        .field-label{
+            margin-bottom:1px;
+            font-size:.53rem;
+            letter-spacing:.08em;
+        }
+        .field-value{
+            font-size:.79rem;
+            line-height:1.15;
+        }
+        .compact-main .field-value{
+            font-size:.86rem;
+            line-height:1.2;
+        }
+        .compact-date{
+            font-size:.77rem;
+        }
+        .compact-inline-badges{
+            gap:3px;
+        }
+        .compact-task-grid .item-badge,
+        .compact-feedback-grid .item-badge{
+            padding:4px 9px;
+            font-size:.72rem;
+        }
+        .quick-icon-btn{
+            width:26px;
+            height:26px;
+            flex:0 0 26px;
+            border-radius:8px;
+            font-size:12px;
+        }
+        .btn-inline{
+            padding:7px 10px;
+            font-size:.74rem;
+            border-radius:12px;
+        }
+        .feedback-secondary-actions{
+            margin-top:6px;
+            gap:5px;
+        }
+        .feedback-secondary-actions .btn-inline{
+            min-height:28px;
+        }
+        .btn-icon{
+            min-width:72px;
+            height:34px;
+            padding:0 10px;
+            border-radius:11px;
+            font-size:.72rem;
+        }
+        .data-grid{
+            grid-template-columns:minmax(360px,3.3fr) minmax(102px,.78fr) minmax(94px,.78fr) minmax(110px,.9fr) minmax(92px,.72fr) minmax(94px,.78fr) 76px 88px;
+            gap:10px;
+        }
+        .feedback-grid{
+            grid-template-columns:minmax(360px,3.1fr) minmax(150px,1fr) minmax(190px,1.05fr) 108px 180px;
+            gap:10px;
+        }
+        .compact-task-grid .compact-actions-wrap,
+        .compact-feedback-grid .compact-actions-wrap{
+            justify-self:start;
+            align-self:start;
+        }
+        .compact-task-grid .quick-actions,
+        .compact-feedback-grid .feedback-quick-actions{
+            justify-content:flex-start;
+            align-items:center;
+            gap:5px;
+        }
+        .compact-task-grid .item-actions,
+        .compact-feedback-grid .item-actions{
+            gap:6px;
+            align-items:flex-start;
+        }
+        .compact-task-grid .field-stack,
+        .compact-feedback-grid .field-stack{
+            gap:0;
+        }
+        .compact-feedback-grid .field-stack > .field-label[style],
+        .compact-task-grid .field-stack > .field-label[style]{
+            margin-top:6px !important;
+        }
+        .date-overdue{
+            color:#a95b62;
+            background:#f8ecee;
+            border:1px solid #f1d6dc;
+            padding:4px 8px;
+            border-radius:999px;
+            display:inline-flex;
+            width:max-content;
+        }
+        .date-warning{
+            color:#8d6b22;
+            background:#faf4de;
+            border:1px solid #efe2b2;
+            padding:4px 8px;
+            border-radius:999px;
+            display:inline-flex;
+            width:max-content;
+        }
+        .date-on-track{
+            color:#3d7d60;
+            background:#ecf7f0;
+            border:1px solid #d4eadb;
+            padding:4px 8px;
+            border-radius:999px;
+            display:inline-flex;
+            width:max-content;
+        }
+        @media (max-width: 1460px){
+            .data-grid{
+                grid-template-columns:minmax(320px,3fr) minmax(96px,.75fr) minmax(90px,.72fr) minmax(104px,.85fr) minmax(88px,.68fr) minmax(90px,.72fr) 72px 84px;
+            }
+            .feedback-grid{
+                grid-template-columns:minmax(320px,2.8fr) minmax(140px,.95fr) minmax(180px,1fr) 100px 170px;
+            }
+        }
+
+    
+        /* ===== Etapa 15b | microcompactação segura ===== */
+        .field-label,
+        .filter-group label,
+        .export-label{
+            font-size:.50rem !important;
+            letter-spacing:.01em !important;
+            text-transform:none !important;
+        }
+        .field-value{
+            font-size:.76rem !important;
+            line-height:1.14 !important;
+        }
+        .compact-main .field-value{
+            font-size:.83rem !important;
+            line-height:1.18 !important;
+        }
+        .compact-date{
+            font-size:.74rem !important;
+        }
+        .compact-task-grid .item-badge,
+        .compact-feedback-grid .item-badge{
+            padding:3px 8px !important;
+            font-size:.69rem !important;
+            text-transform:none !important;
+            letter-spacing:.01em !important;
+        }
+        .status-filter-chip span{
+            min-height:36px !important;
+            padding:0 10px !important;
+            font-size:.73rem !important;
+            text-transform:none !important;
+            letter-spacing:.01em !important;
+        }
+        .filter-group select,
+        .filter-group input{
+            font-size:.77rem !important;
+        }
+        .item-card{
+            padding:12px 13px 12px 16px !important;
+            gap:10px !important;
+        }
+        .items-list{
+            gap:8px !important;
+        }
+        .btn-inline{
+            padding:6px 9px !important;
+            font-size:.71rem !important;
+        }
+        .btn-icon{
+            min-width:68px !important;
+            height:32px !important;
+            font-size:.69rem !important;
+        }
+        .quick-icon-btn{
+            width:24px !important;
+            height:24px !important;
+            flex:0 0 24px !important;
+            font-size:11px !important;
+        }
+        .data-grid{
+            gap:8px !important;
+        }
+        .feedback-grid{
+            gap:8px !important;
+        }
+        .compact-task-grid .quick-actions,
+        .compact-feedback-grid .feedback-quick-actions{
+            justify-content:flex-start !important;
+            align-items:center !important;
+            gap:5px !important;
+        }
+        .compact-task-grid .item-actions,
+        .compact-feedback-grid .item-actions{
+            align-items:flex-start !important;
+            gap:6px !important;
+        }
+
+    
+        /* ===== Etapa 16 | ajustes finais de modal, kanban e atas ===== */
+        .modal-card {
+            width: min(820px, 92vw) !important;
+            max-width: 820px !important;
+            border-radius: 20px !important;
+            padding: 22px 22px 20px !important;
+        }
+        .modal-card.large {
+            width: min(860px, 93vw) !important;
+            max-width: 860px !important;
+        }
+        .modal-title {
+            font-size: 1.05rem !important;
+            margin-bottom: 14px !important;
+        }
+        .modal-body .form-group label,
+        .modal-body .form-row .form-group label {
+            text-transform: none !important;
+            letter-spacing: .02em !important;
+            font-size: .52rem !important;
+        }
+        .modal-body .form-group label::first-letter,
+        .modal-body .form-row .form-group label::first-letter {
+            text-transform: uppercase !important;
+        }
+        .modal-body .feedback-rich-text,
+        .modal-body .task-details-box,
+        .modal-body .form-group div:not(.ql-editor) {
+            font-size: .82rem !important;
+            line-height: 1.25 !important;
+        }
+
+        .kanban-card .card-title,
+        .kanban-task-title,
+        .kanban-card-title {
+            font-size: .92rem !important;
+            font-weight: 700 !important;
+            line-height: 1.24 !important;
+        }
+
+        .minutes-card strong,
+        .minutes-card b,
+        .minutes-card .minutes-label,
+        .minutes-card .minutes-section strong {
+            text-transform: none !important;
+            letter-spacing: .01em !important;
+        }
+        .minutes-card strong::first-letter,
+        .minutes-card b::first-letter,
+        .minutes-card .minutes-label::first-letter,
+        .minutes-card .minutes-section strong::first-letter {
+            text-transform: uppercase !important;
+        }
+
+    
+        /* ===== Etapa 17 | ajuste fino final ===== */
+        .modal-card {
+            width: min(660px, 88vw) !important;
+            max-width: 660px !important;
+            padding: 18px 18px 16px !important;
+            border-radius: 18px !important;
+        }
+        .modal-card.large {
+            width: min(700px, 89vw) !important;
+            max-width: 700px !important;
+        }
+        .modal-title {
+            font-size: .96rem !important;
+            margin-bottom: 10px !important;
+        }
+        .modal-close {
+            width: 36px !important;
+            height: 36px !important;
+        }
+        .modal-body .form-row {
+            gap: 12px !important;
+        }
+        .modal-body .form-group {
+            margin-bottom: 10px !important;
+        }
+        .modal-body .form-group label,
+        .modal-body .form-row .form-group label {
+            font-size: .48rem !important;
+        }
+        .modal-body .feedback-rich-text,
+        .modal-body .task-details-box,
+        .modal-body .form-group div:not(.ql-editor) {
+            font-size: .76rem !important;
+            line-height: 1.2 !important;
+        }
+
+    
+        /* ===== Etapa 18 | correção de corte e pdf ===== */
+        .data-grid{
+            grid-template-columns:minmax(330px,3.1fr) minmax(94px,.72fr) minmax(96px,.74fr) minmax(96px,.74fr) minmax(84px,.66fr) minmax(92px,.70fr) 72px minmax(132px,.95fr) !important;
+            gap:8px !important;
+        }
+        .compact-task-grid .field-stack:last-child{
+            min-width:132px !important;
+        }
+        .compact-task-grid .item-actions{
+            flex-wrap:nowrap !important;
+            justify-content:flex-start !important;
+            gap:6px !important;
+        }
+        .compact-task-grid .item-actions .btn-icon{
+            min-width:62px !important;
+            height:30px !important;
+            padding:0 8px !important;
+            font-size:.66rem !important;
+        }
+        .compact-task-grid .field-value{
+            overflow-wrap:anywhere;
+        }
+        .minutes-card strong,
+        .minutes-card b{
+            text-transform:none !important;
+            letter-spacing:.01em !important;
+        }
+        .minutes-card strong::first-letter,
+        .minutes-card b::first-letter{
+            text-transform:uppercase !important;
+        }
+
+    
+        /* ===== Etapa 19 | alinhamento + pdf estável ===== */
+        .status-filter-chip span{
+            white-space: nowrap !important;
+            font-size: .70rem !important;
+            padding: 0 9px !important;
+        }
+        .data-grid{
+            grid-template-columns:minmax(360px,3.35fr) minmax(98px,.74fr) minmax(92px,.7fr) minmax(104px,.78fr) minmax(92px,.7fr) minmax(104px,.76fr) 86px minmax(136px,1fr) !important;
+            gap:10px !important;
+        }
+        .compact-task-grid .field-stack:nth-child(2) .item-badge,
+        .compact-task-grid .field-stack:nth-child(3) .item-badge{
+            white-space: nowrap !important;
+        }
+        .compact-task-grid .field-stack:nth-child(7){
+            min-width:86px !important;
+        }
+        .compact-task-grid .quick-actions{
+            justify-content:flex-start !important;
+        }
+        .compact-task-grid .field-stack:nth-child(6) .field-value{
+            white-space: nowrap !important;
+        }
+        .feedback-grid{
+            grid-template-columns:minmax(360px,3.15fr) minmax(150px,.95fr) minmax(192px,1.05fr) 118px 188px !important;
+            gap:10px !important;
+        }
+        .compact-feedback-grid .compact-actions-wrap,
+        .compact-feedback-grid .field-stack:last-child{
+            align-self:start !important;
+        }
+        .compact-feedback-grid .feedback-quick-actions,
+        .compact-feedback-grid .item-actions{
+            min-height:34px;
+            display:flex !important;
+            align-items:center !important;
+        }
+        .compact-feedback-grid .item-actions{
+            justify-content:flex-start !important;
+        }
+
+    
+        /* ===== Etapa 20 | kanban + origem + pdf ===== */
+        .kanban-card-title {
+            font-size: .81rem !important;
+            line-height: 1.32 !important;
+            font-weight: 600 !important;
+        }
+        .kanban-card-date {
+            font-size: .70rem !important;
+            font-weight: 600 !important;
+        }
+
+    
+        /* ===== Etapa 21 | ajustes finos ===== */
+        .kanban-card-title{
+            font-size:.77rem !important;
+            font-weight:600 !important;
+            line-height:1.28 !important;
+        }
+
     </style>
 </head>
 <body>
@@ -930,10 +1478,12 @@
                         <div class="total-tasks" id="totalTasks">0</div>
                         <div class="total-label">Tarefas</div>
                     </div>
-                    <button class="btn-header btn-backup" onclick="exportBackup()" title="Fazer backup dos dados">Backup</button>
-                    <button class="btn-header btn-backup" onclick="document.getElementById('importFile').click()" title="Restaurar backup">Restaurar</button>
+                    <div class="header-actions">
+                    <button class="btn-header btn-backup" id="btnHeaderBackup" onclick="exportBackup()" title="Fazer backup dos dados">Backup</button>
+                    <button class="btn-header btn-backup" id="btnHeaderRestore" onclick="document.getElementById('importFile').click()" title="Restaurar backup">Restaurar</button>
                     <input type="file" id="importFile" accept=".json" style="display:none" onchange="importBackup(this.files[0])"/>
                     <button class="btn-header btn-logout" onclick="logout()">Sair</button>
+                    </div>
                 </div>
             </div>
         </header>
@@ -944,7 +1494,7 @@
                 <div class="tabs-container">
                     <button class="tab active" onclick="switchTab('inicio', event)">Início</button>
                     <button class="tab" onclick="switchTab('tarefas', event)">Tarefas</button>
-                    <button class="tab" onclick="switchTab('feedback', event)">Feedback do Piloto</button>
+                    <button class="tab" onclick="switchTab('feedback', event)">Feedback</button>
                     <button class="tab" onclick="switchTab('kanban', event)">Kanban</button>
                     <button class="tab" onclick="switchTab('dashboard', event)">Dashboard</button>
                     <button class="tab" onclick="switchTab('atas', event)">Atas</button>
@@ -962,10 +1512,10 @@
                 
                 <div class="home-nav-grid">
                     <div class="home-nav-card is-public" onclick="window.open('https://sara-paes.github.io/acompanhamento-sesi-esporte/feedback-piloto/', '_blank')">
-                        <div class="home-nav-title">Coleta de Feedback do Piloto</div>
+                        <div class="home-nav-title">Coleta de Feedback</div>
                         <div class="home-nav-subtitle">Abrir formulário público</div>
                     </div>
-                    <div class="home-nav-card is-roadmap" onclick="window.open('roadmap.html', '_blank')">
+                    <div class="home-nav-card is-roadmap" onclick="window.open('https://sara-paes.github.io/acompanhamento-sesi-esporte/roadmap.html', '_blank')">
                         <div class="home-nav-title">Roadmap</div>
                         <div class="home-nav-subtitle">Abrir página dedicada</div>
                     </div>
@@ -988,35 +1538,45 @@
                     </div>
 
                     
-                    <div class="controls">
-                        <div class="search-box">
-                            <span class="search-icon"></span>
-                            <input type="text" id="searchTasks" placeholder="Buscar tarefas..." onkeyup="filterTasks()">
-                        </div>
-                        <div class="task-toolbar">
-                            <div class="status-multi-filter" aria-label="Filtrar por status">
-                                <label class="status-filter-chip pending"><input type="checkbox" value="pending" onchange="filterTasks()"><span>Pendente</span></label>
-                                <label class="status-filter-chip in-progress"><input type="checkbox" value="in-progress" onchange="filterTasks()"><span>Em andamento</span></label>
-                                <label class="status-filter-chip completed"><input type="checkbox" value="completed" onchange="filterTasks()"><span>Concluída</span></label>
+                    <div class="controls is-two-rows">
+                        <div class="filter-row tasks-row">
+                            <div class="filter-group task-status-group">
+                                <label>Status</label>
+                                <div class="status-multi-filter" aria-label="Filtrar por status">
+                                    <label class="status-filter-chip pending"><input type="checkbox" value="pending" onchange="filterTasks()"><span>Pendente</span></label>
+                                    <label class="status-filter-chip in-progress"><input type="checkbox" value="in-progress" onchange="filterTasks()"><span>Em andamento</span></label>
+                                    <label class="status-filter-chip completed"><input type="checkbox" value="completed" onchange="filterTasks()"><span>Concluída</span></label>
+                                </div>
                             </div>
-                            <select class="select-box origin-filter" id="filterTaskOrigin" onchange="filterTasks()">
-                                <option value="">Todas as origens</option>
-                                <option value="manual">Manual</option>
-                                <option value="feedback_piloto">Feedback do Piloto</option>
-                            </select>
-                            <div class="view-toggle" aria-label="Modo de visualização">
-                                <button type="button" class="view-toggle-btn active" id="viewCardsBtn" onclick="setTaskViewMode('cards')">Cards</button>
-                                <button type="button" class="view-toggle-btn" id="viewListBtn" onclick="setTaskViewMode('list')">Lista</button>
+                            <div class="filter-group">
+                                <label>Origem</label>
+                                <select class="select-box origin-filter" id="filterTaskOrigin" onchange="filterTasks()">
+                                    <option value="">Todas as origens</option>
+                                    <option value="manual">Manual</option>
+                                    <option value="feedback_piloto">Feedback</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label>Ordenação</label>
+                                <select class="select-box" id="sortTasks" onchange="filterTasks()">
+                                    <option value="data-desc">Mais Recentes</option>
+                                    <option value="data-asc">Mais Antigos</option>
+                                    <option value="status">Por Status</option>
+                                    <option value="entrega">Por Data de Entrega</option>
+                                </select>
+                            </div>
+                            <div class="filter-group export-slot-right">
+                                <label>Exportação</label>
+                                <button class="export-btn-subtle" onclick="exportTasksToPDF()">PDF</button>
                             </div>
                         </div>
-                        <select class="select-box" id="sortTasks" onchange="filterTasks()">
-                            <option value="data-desc">Mais Recentes</option>
-                            <option value="data-asc">Mais Antigos</option>
-                            <option value="status">Por Status</option>
-                            <option value="entrega">Por Data de Entrega</option>
-                        </select>
-                        <button class="btn-export" onclick="exportTasksToCSV()">CSV</button>
-                        <button class="btn-export" onclick="exportTasksToPDF()">PDF</button>
+                        <div class="filter-row">
+                            <div class="filter-group">
+                                <div class="search-box">
+                                    <input type="text" id="searchTasks" placeholder="Buscar tarefas..." onkeyup="filterTasks()">
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
 
@@ -1103,9 +1663,6 @@
                         </div>
 </div>
 
-                    <div style="margin-top: 24px;">
-                        <button class="btn-export" onclick="exportDashboardToPDF()" style="width: 100%; padding: 14px;">Exportar dashboard em PDF</button>
-                    </div>
                 </div>
             </div>
 
@@ -1116,53 +1673,67 @@
                         <div class="section-title-group">
                             <div class="section-title">
                                 <span class="section-icon"></span>
-                                Feedback do Piloto
+                                Feedback
                             </div>
                             <div class="section-info" id="feedbackInfo">0 feedbacks • 0 novos • 0 arquivados</div>
                         </div>
                     </div>
 
-                    <div class="controls">
-                        <div class="search-box">
-                            <span class="search-icon"></span>
-                            <input type="text" id="searchFeedback" placeholder="Buscar feedbacks..." onkeyup="filterFeedback()">
+                    <div class="controls is-two-rows">
+                        <div class="filter-row feedback-row">
+                            <div class="filter-group">
+                                <label>Status</label>
+                                <select class="select-box" id="filterFeedbackStatus" onchange="filterFeedback()">
+                                    <option value="">Todos os Status</option>
+                                    <option value="novo">Novo</option>
+                                    <option value="em_analise">Em análise</option>
+                                    <option value="transformado_em_tarefa">Tarefa criada</option>
+                                    <option value="arquivado">Arquivado</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label>Tipo</label>
+                                <select class="select-box" id="filterFeedbackType" onchange="filterFeedback()">
+                                    <option value="">Todos os Tipos</option>
+                                    <option value="Erro">Erro</option>
+                                    <option value="Melhoria">Melhoria</option>
+                                    <option value="Dúvida">Dúvida</option>
+                                    <option value="Sugestão">Sugestão</option>
+                                    <option value="Outro">Outro</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label>Funcionalidade</label>
+                                <select class="select-box" id="filterFeedbackFunctionality" onchange="filterFeedback()">
+                                    <option value="">Todas as Funcionalidades</option>
+                                    <option value="Avalia">Avalia</option>
+                                    <option value="Chamada">Chamada</option>
+                                    <option value="Login">Login</option>
+                                    <option value="Planejamento Semestral">Planejamento Semestral</option>
+                                    <option value="Outra">Outra</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label>Prioridade</label>
+                                <select class="select-box" id="filterFeedbackPriority" onchange="filterFeedback()">
+                                    <option value="">Todas as Prioridades</option>
+                                    <option value="Baixa">Baixa</option>
+                                    <option value="Média">Média</option>
+                                    <option value="Alta">Alta</option>
+                                    <option value="Crítica">Crítica</option>
+                                </select>
+                            </div>
+                            <div class="filter-group export-slot-right">
+                                <label>Exportação</label>
+                                <button class="export-btn-subtle" onclick="exportFeedbackToPDF()">PDF</button>
+                            </div>
                         </div>
-                        <select class="select-box" id="filterFeedbackStatus" onchange="filterFeedback()">
-                            <option value="">Todos os Status</option>
-                            <option value="novo">Novo</option>
-                            <option value="em_analise">Em análise</option>
-                            <option value="transformado_em_tarefa">Transformado em tarefa</option>
-                            <option value="arquivado">Arquivado</option>
-                        </select>
-                        <select class="select-box" id="filterFeedbackType" onchange="filterFeedback()">
-                            <option value="">Todos os Tipos</option>
-                            <option value="Erro">Erro</option>
-                            <option value="Melhoria">Melhoria</option>
-                            <option value="Dúvida">Dúvida</option>
-                            <option value="Sugestão">Sugestão</option>
-                            <option value="Outro">Outro</option>
-                        </select>
-                        <select class="select-box" id="filterFeedbackFunctionality" onchange="filterFeedback()">
-                            <option value="">Todas as Funcionalidades</option>
-                            <option value="Avalia">Avalia</option>
-                            <option value="Chamada">Chamada</option>
-                            <option value="Login">Login</option>
-                            <option value="Planejamento Semestral">Planejamento Semestral</option>
-                            <option value="Outra">Outra</option>
-                        </select>
-                        <select class="select-box" id="filterFeedbackPriority" onchange="filterFeedback()">
-                            <option value="">Todas as Prioridades</option>
-                            <option value="Baixa">Baixa</option>
-                            <option value="Média">Média</option>
-                            <option value="Alta">Alta</option>
-                            <option value="Crítica">Crítica</option>
-                        </select>
-                    </div>
-
-                    <div class="feedback-view-toggle-wrap">
-                        <div class="view-toggle" aria-label="Modo de visualização do feedback">
-                            <button type="button" class="view-toggle-btn active" id="feedbackViewCardsBtn" onclick="setFeedbackViewMode('cards')">Cards</button>
-                            <button type="button" class="view-toggle-btn" id="feedbackViewListBtn" onclick="setFeedbackViewMode('list')">Lista</button>
+                        <div class="filter-row">
+                            <div class="filter-group">
+                                <div class="search-box">
+                                    <input type="text" id="searchFeedback" placeholder="Buscar feedbacks..." onkeyup="filterFeedback()">
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -1189,13 +1760,23 @@
                         <button class="btn-nova" id="btnNewMinutes" onclick="openMinutesModal()" disabled>+ Registrar Ata</button>
                     </div>
 
-                    <div class="controls">
-                        <div class="search-box">
-                            <span class="search-icon"></span>
-                            <input type="text" id="searchMinutes" placeholder="Buscar nas atas..." onkeyup="filterMinutes()">
+                    <div class="controls is-two-rows">
+                        <div class="filter-row minutes-row">
+                            <div></div>
+                            <div class="minutes-controls-right">
+                                <div class="filter-group" style="min-width: 170px;">
+                                    <label>Exportação</label>
+                                    <button class="export-btn-subtle is-small" onclick="exportMinutesToPDF()">PDF</button>
+                                </div>
+                            </div>
                         </div>
-                        <button class="btn-export" onclick="exportMinutesToCSV()">CSV</button>
-                        <button class="btn-export" onclick="exportMinutesToPDF()">PDF</button>
+                        <div class="filter-row">
+                            <div class="filter-group">
+                                <div class="search-box">
+                                    <input type="text" id="searchMinutes" placeholder="Buscar nas atas..." onkeyup="filterMinutes()">
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div id="minutesList">
@@ -1403,7 +1984,7 @@
                         <select id="feedbackEditStatus" required>
                             <option value="novo">Novo</option>
                             <option value="em_analise">Em análise</option>
-                            <option value="transformado_em_tarefa">Transformado em tarefa</option>
+                            <option value="transformado_em_tarefa">Tarefa criada</option>
                             <option value="arquivado">Arquivado</option>
                         </select>
                     </div>
@@ -1481,8 +2062,8 @@
         let currentDraggedTaskId = null;
         let currentTaskAttachmentUrl = null;
         let currentTaskAttachmentName = null;
-        let currentTaskView = 'cards';
-        let currentFeedbackView = 'cards';
+        let currentTaskView = 'list';
+        let currentFeedbackView = 'list';
         let completedKanbanCollapsed = false;
         let editingFeedbackId = null;
 
@@ -1550,6 +2131,7 @@
             isAuthenticated = false;
             isViewOnly = false;
             sessionStorage.removeItem('view_only');
+            document.body.classList.remove('view-only-mode');
             
             document.getElementById('loginScreen').style.display = 'flex';
             document.getElementById('mainApp').style.display = 'none';
@@ -1565,16 +2147,23 @@
             document.getElementById('authBadge').style.display = 'block';
             
             const authText = document.getElementById('authText');
+            document.body.classList.toggle('view-only-mode', isViewOnly);
+            const btnBackup = document.getElementById('btnHeaderBackup');
+            const btnRestore = document.getElementById('btnHeaderRestore');
             if (isViewOnly) {
                 authText.textContent = 'Apenas visualização';
                 document.getElementById('authBadge').classList.add('view-only');
                 document.getElementById('btnNewTask').disabled = true;
                 document.getElementById('btnNewMinutes').disabled = true;
+                if (btnBackup) btnBackup.style.display = 'none';
+                if (btnRestore) btnRestore.style.display = 'none';
             } else {
                 authText.textContent = 'Edição ativada';
                 document.getElementById('authBadge').classList.remove('view-only');
                 document.getElementById('btnNewTask').disabled = false;
                 document.getElementById('btnNewMinutes').disabled = false;
+                if (btnBackup) btnBackup.style.display = '';
+                if (btnRestore) btnRestore.style.display = '';
             }
 
             loadTasks();
@@ -1819,29 +2408,7 @@
         }
 
         function filterFeedback() {
-            const searchTerm = document.getElementById('searchFeedback').value.toLowerCase();
-            const statusFilter = document.getElementById('filterFeedbackStatus').value;
-            const typeFilter = document.getElementById('filterFeedbackType').value;
-            const functionalityFilter = document.getElementById('filterFeedbackFunctionality').value;
-            const priorityFilter = document.getElementById('filterFeedbackPriority').value;
-
-            const filtered = feedbackData.filter(feedback => {
-                const descriptionText = stripHtml(feedback.descricao || '').toLowerCase();
-                const matchSearch =
-                    (feedback.titulo || '').toLowerCase().includes(searchTerm) ||
-                    (feedback.nome_responsavel || '').toLowerCase().includes(searchTerm) ||
-                    (feedback.unidade || '').toLowerCase().includes(searchTerm) ||
-                    descriptionText.includes(searchTerm);
-
-                const matchStatus = !statusFilter || feedback.status === statusFilter;
-                const matchType = !typeFilter || feedback.tipo_apontamento === typeFilter;
-                const matchFunctionality = !functionalityFilter || feedback.funcionalidade === functionalityFilter;
-                const matchPriority = !priorityFilter || feedback.prioridade === priorityFilter;
-
-                return matchSearch && matchStatus && matchType && matchFunctionality && matchPriority;
-            });
-
-            displayFeedback(filtered);
+            displayFeedback(getFilteredFeedback());
         }
 
         function displayFeedback(items) {
@@ -1851,73 +2418,72 @@
                 return;
             }
 
-            const cardsHtml = items.map(feedback => {
-                const preview = truncateText(stripHtml(feedback.descricao || ''), 240);
+            const listHtml = items.map(feedback => {
+                const statusClass = mapFeedbackStatusClass(feedback.status);
+                const badgeClass = mapFeedbackBadgeClass(feedback.status);
+                const archiveBtnClass = feedback.status === 'arquivado' ? 'archived-state' : '';
+                const transformBtnClass = feedback.status === 'transformado_em_tarefa' ? 'transformed-state' : '';
                 return `
-                    <div class="item-card status-${mapFeedbackStatusClass(feedback.status)}">
-                        <div class="item-content">
-                            <div class="item-title">${escapeHtml(feedback.titulo || 'Sem título')}</div>
-                            <div class="item-meta">
-                                <span class="item-badge badge-${mapFeedbackBadgeClass(feedback.status)}">${getFeedbackStatusLabel(feedback.status)}</span>
-                                <span class="item-badge badge-phase">${escapeHtml(feedback.tipo_apontamento || '—')}</span>
-                                <span class="item-badge badge-phase">${escapeHtml(feedback.funcionalidade || '—')}</span>
-                                <span class="item-badge badge-phase">${escapeHtml(feedback.prioridade || '—')}</span>
-                            </div>
-                            <div class="item-dates">
-                                <span>${escapeHtml(feedback.unidade || '—')}</span>
-                                <span>${escapeHtml(feedback.nome_responsavel || '—')}</span>
-                                <span>${formatDateTime(feedback.created_at)}</span>
-                            </div>
-                            <div class="item-description">${escapeHtml(preview)}</div>
-                            <div class="feedback-actions">
-                                <button class="btn-inline" onclick="openFeedbackDetailsModal('${feedback.id}')">Ver detalhes</button>
-                                ${feedback.link_relacionado ? `<a class="btn-inline" href="${feedback.link_relacionado}" target="_blank" rel="noopener noreferrer">Abrir link</a>` : ''}
-                                ${feedback.anexo_url ? `<button class="btn-inline" onclick="openAttachment('${feedback.anexo_url}')">Ver anexo</button>` : ''}
-                                <button class="btn-inline" onclick="openFeedbackEditModal('${feedback.id}')" ${isViewOnly ? 'disabled' : ''}>Editar</button>
-                                <button class="btn-inline danger" onclick="deleteFeedback('${feedback.id}')" ${isViewOnly ? 'disabled' : ''}>Excluir</button>
-                                <button class="btn-inline danger" onclick="archiveFeedback('${feedback.id}')" ${isViewOnly || feedback.status === 'arquivado' ? 'disabled' : ''}>Arquivar</button>
-                                <button class="btn-inline" onclick="openFeedbackTaskModal('${feedback.id}')" ${isViewOnly || feedback.status === 'transformado_em_tarefa' ? 'disabled' : ''}>Transformar em tarefa</button>
+                <div class="item-card status-${statusClass}">
+                    <div class="item-content feedback-grid compact-feedback-grid">
+                        <div class="field-stack compact-main">
+                            <span class="field-label">Feedback</span>
+                            <div class="field-value">${escapeHtml(feedback.titulo || 'Sem título')}</div>
+                            <div class="feedback-secondary-actions">
+                                <button class="btn-inline danger ${archiveBtnClass}" onclick="archiveFeedback('${feedback.id}')" ${isViewOnly || feedback.status === 'arquivado' ? 'disabled' : ''}>Arquivar</button>
+                                <button class="btn-inline ${transformBtnClass}" onclick="openFeedbackTaskModal('${feedback.id}')" ${isViewOnly || feedback.status === 'transformado_em_tarefa' ? 'disabled' : ''}>Criar tarefa</button>
                             </div>
                         </div>
-                    </div>`;
+                        <div class="field-stack compact-stack">
+                            <div>
+                                <span class="field-label">Status</span>
+                                <div class="compact-inline-badges"><span class="item-badge badge-${badgeClass}">${getFeedbackStatusLabel(feedback.status)}</span></div>
+                            </div>
+                            <div>
+                                <span class="field-label">Tipo</span>
+                                <div class="compact-inline-badges"><span class="item-badge badge-phase">${escapeHtml(feedback.tipo_apontamento || '—')}</span></div>
+                            </div>
+                        </div>
+                        <div class="field-stack">
+                            <span class="field-label">Unidade</span>
+                            <div class="field-value">${escapeHtml(feedback.unidade || '—')}</div>
+                            <span class="field-label" style="margin-top:8px;">Responsável</span>
+                            <div class="field-value">${escapeHtml(feedback.nome_responsavel || '—')}</div>
+                            <span class="field-label" style="margin-top:8px;">Data</span>
+                            <div class="field-value compact-date">${formatDateTime(feedback.created_at)}</div>
+                        </div>
+                        <div class="field-stack compact-actions-wrap">
+                            <span class="field-label">Ações rápidas</span>
+                            <div class="feedback-quick-actions">
+                                <button class="quick-icon-btn" title="Ver detalhes" onclick="openFeedbackDetailsModal('${feedback.id}')">ⓘ</button>
+                                ${feedback.link_relacionado ? `<a class="quick-icon-btn" title="Abrir link" href="${feedback.link_relacionado}" target="_blank" rel="noopener noreferrer">↗</a>` : ''}
+                                ${feedback.anexo_url ? `<button class="quick-icon-btn" title="Ver anexo" onclick="openAttachment('${feedback.anexo_url}')">📎</button>` : ''}
+                            </div>
+                        </div>
+                        <div class="field-stack">
+                            <span class="field-label">Gestão</span>
+                            <div class="item-actions">
+                                <button class="btn-icon" onclick="openFeedbackEditModal('${feedback.id}')" ${isViewOnly ? 'disabled' : ''}>Editar</button>
+                                <button class="btn-icon btn-delete" onclick="deleteFeedback('${feedback.id}')" ${isViewOnly ? 'disabled' : ''}>Excluir</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
             }).join('');
 
-            const listHtml = items.map(feedback => `
-                <div class="item-card status-${mapFeedbackStatusClass(feedback.status)}">
-                    <div class="item-content">
-                        <div class="item-title">${escapeHtml(feedback.titulo || 'Sem título')}</div>
-                        <div class="item-meta">
-                            <span class="item-badge badge-${mapFeedbackBadgeClass(feedback.status)}">${getFeedbackStatusLabel(feedback.status)}</span>
-                            <span class="item-badge badge-phase">${escapeHtml(feedback.tipo_apontamento || '—')}</span>
-                        </div>
-                        <div class="item-dates">
-                            <span>${escapeHtml(feedback.unidade || '—')}</span>
-                            <span>${formatDateTime(feedback.created_at)}</span>
-                        </div>
-                        <div class="feedback-quick-actions">
-                            <button class="quick-icon-btn" title="Ver detalhes" onclick="openFeedbackDetailsModal('${feedback.id}')">ⓘ</button>
-                            ${feedback.link_relacionado ? `<a class="quick-icon-btn" title="Abrir link" href="${feedback.link_relacionado}" target="_blank" rel="noopener noreferrer">↗</a>` : `<span style="width:34px;height:34px;display:inline-block;"></span>`}
-                            ${feedback.anexo_url ? `<button class="quick-icon-btn" title="Ver anexo" onclick="openAttachment('${feedback.anexo_url}')">📎</button>` : `<span style="width:34px;height:34px;display:inline-block;"></span>`}
-                        </div>
-                    </div>
-                    <div class="item-actions">
-                        <button class="btn-icon" onclick="openFeedbackEditModal('${feedback.id}')" ${isViewOnly ? 'disabled' : ''}>Editar</button>
-                        <button class="btn-icon btn-delete" onclick="deleteFeedback('${feedback.id}')" ${isViewOnly ? 'disabled' : ''}>Excluir</button>
-                    </div>
-                </div>
-            `).join('');
-
-            list.innerHTML = `<div class="items-list ${currentFeedbackView === 'list' ? 'feedback-list-view' : ''}">${currentFeedbackView === 'list' ? listHtml : cardsHtml}</div>`;
+            list.innerHTML = `<div class="items-list feedback-list-view">${listHtml}</div>`;
         }
 
         function openFeedbackDetailsModal(id) {
             const feedback = feedbackData.find(item => item.id === id);
             if (!feedback) return;
 
-            const container = document.getElementById('feedbackDetailsContent');
-            container.innerHTML = `
+            const titleEl = document.querySelector('#taskDetailsModal .modal-title');
+            if (titleEl) titleEl.textContent = 'Detalhes';
+
+            document.getElementById('taskDetailsContent').innerHTML = `
                 <div class="form-group">
-                    <label>Título</label>
+                    <label>Feedback</label>
                     <div class="feedback-rich-text"><strong>${escapeHtml(feedback.titulo || '—')}</strong></div>
                 </div>
                 <div class="form-row">
@@ -1926,53 +2492,52 @@
                         <div class="feedback-rich-text">${getFeedbackStatusLabel(feedback.status)}</div>
                     </div>
                     <div class="form-group">
+                        <label>Tipo</label>
+                        <div class="feedback-rich-text">${escapeHtml(feedback.tipo_apontamento || '—')}</div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Funcionalidade</label>
+                        <div class="feedback-rich-text">${escapeHtml(feedback.funcionalidade || '—')}</div>
+                    </div>
+                    <div class="form-group">
                         <label>Prioridade</label>
                         <div class="feedback-rich-text">${escapeHtml(feedback.prioridade || '—')}</div>
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Tipo do apontamento</label>
-                        <div class="feedback-rich-text">${escapeHtml(feedback.tipo_apontamento || '—')}</div>
-                    </div>
-                    <div class="form-group">
-                        <label>Funcionalidade</label>
-                        <div class="feedback-rich-text">${escapeHtml(feedback.funcionalidade || '—')}</div>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Unidade</label>
+                        <label>Origem</label>
                         <div class="feedback-rich-text">${escapeHtml(feedback.unidade || '—')}</div>
                     </div>
                     <div class="form-group">
-                        <label>Responsável pelo envio</label>
+                        <label>Responsável</label>
                         <div class="feedback-rich-text">${escapeHtml(feedback.nome_responsavel || '—')}</div>
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Perfil do usuário</label>
-                        <div class="feedback-rich-text">${escapeHtml(feedback.perfil_usuario || '—')}</div>
+                        <label>Data</label>
+                        <div class="feedback-rich-text">${formatDateTime(feedback.created_at)}</div>
                     </div>
                     <div class="form-group">
-                        <label>Data do registro</label>
-                        <div class="feedback-rich-text">${formatDateTime(feedback.created_at)}</div>
+                        <label>Perfil do usuário</label>
+                        <div class="feedback-rich-text">${escapeHtml(feedback.perfil_usuario || '—')}</div>
                     </div>
                 </div>
                 <div class="form-group">
                     <label>Descrição</label>
                     <div class="feedback-rich-text">${feedback.descricao || '<em>Sem descrição.</em>'}</div>
                 </div>
-                ${feedback.link_relacionado ? `<div class="form-group"><label>Link relacionado</label><div class="feedback-rich-text"><a href="${feedback.link_relacionado}" target="_blank" rel="noopener noreferrer">${escapeHtml(feedback.link_relacionado)}</a></div></div>` : ''}
-                ${feedback.anexo_url ? `<div class="form-group"><label>Anexo</label><div class="feedback-rich-text"><button class="btn-inline" onclick="openAttachment('${feedback.anexo_url}')">Abrir anexo</button></div></div>` : ''}
+                ${(feedback.link_relacionado || feedback.anexo_url) ? `<div class="form-group"><label>Ações relacionadas</label><div class="feedback-actions" style="margin-top:0;">${feedback.link_relacionado ? `<a class="btn-inline" href="${feedback.link_relacionado}" target="_blank" rel="noopener noreferrer">Abrir link</a>` : ''}${feedback.anexo_url ? `<button class="btn-inline" onclick="openAttachment('${feedback.anexo_url}')">Abrir anexo</button>` : ''}</div></div>` : ''}
             `;
 
-            document.getElementById('feedbackDetailsModal').classList.add('active');
+            document.getElementById('taskDetailsModal').classList.add('active');
         }
 
         function closeFeedbackDetailsModal() {
-            document.getElementById('feedbackDetailsModal').classList.remove('active');
+            closeTaskDetailsModal();
         }
 
         function openFeedbackEditModal(id) {
@@ -2033,6 +2598,11 @@
             if (isViewOnly) return;
             if (!confirm('Deseja excluir este feedback?')) return;
 
+            const previous = [...feedbackData];
+            feedbackData = feedbackData.filter(item => item.id !== id);
+            filterFeedback();
+            updateFeedbackInfo();
+
             try {
                 const { error } = await supabaseClient
                     .from('feedback_piloto')
@@ -2040,8 +2610,10 @@
                     .eq('id', id);
 
                 if (error) throw error;
-                await loadFeedback();
             } catch (error) {
+                feedbackData = previous;
+                filterFeedback();
+                updateFeedbackInfo();
                 alert('Erro ao excluir feedback: ' + error.message);
             }
         }
@@ -2390,7 +2962,7 @@
         function getFeedbackStatusLabel(status) {
             if (status === 'novo') return 'Novo';
             if (status === 'em_analise') return 'Em análise';
-            if (status === 'transformado_em_tarefa') return 'Transformado em tarefa';
+            if (status === 'transformado_em_tarefa') return 'Tarefa criada';
             if (status === 'arquivado') return 'Arquivado';
             return status || '—';
         }
@@ -2417,49 +2989,15 @@
         }
 
         function getTaskOriginLabel(origin) {
-            return origin === 'feedback_piloto' ? 'Feedback do Piloto' : 'Manual';
+            return origin === 'feedback_piloto' ? 'Feedback' : 'Manual';
         }
 
         function getSelectedTaskStatuses() {
             return Array.from(document.querySelectorAll('.status-filter-chip input:checked')).map(input => input.value);
         }
 
-        function setTaskViewMode(mode) {
-            currentTaskView = mode;
-            const cardsBtn = document.getElementById('viewCardsBtn');
-            const listBtn = document.getElementById('viewListBtn');
-            if (cardsBtn) cardsBtn.classList.toggle('active', mode === 'cards');
-            if (listBtn) listBtn.classList.toggle('active', mode === 'list');
-            filterTasks();
-        }
 
-        function toggleTaskDetails(taskId) {
-            const details = document.getElementById(`task-details-${taskId}`);
-            const trigger = document.getElementById(`task-details-trigger-${taskId}`);
-            if (!details) return;
-            const isOpen = details.classList.toggle('is-open');
-            if (trigger) trigger.textContent = isOpen ? 'Ocultar detalhes' : 'Ver detalhes';
-        }
-
-        function renderTaskDetails(task) {
-            const hasNotes = task.notes && task.notes.trim();
-            const hasAttachment = task.attachmentUrl;
-            const hasLink = task.link;
-            if (!hasNotes && !hasAttachment && !hasLink) return '';
-
-            return `
-                <div class="task-details" id="task-details-${task.id}">
-                    ${hasNotes ? `<div class="item-description">${escapeHtml(task.notes)}</div>` : ''}
-                    ${(hasAttachment || hasLink) ? `<div class="feedback-actions" style="margin-top:12px;">
-                        ${hasAttachment ? `<button class="btn-inline is-ghost" onclick="openAttachment('${task.attachmentUrl}')">Ver anexo</button>` : ''}
-                        ${hasLink ? `<a class="btn-inline is-ghost" href="${task.link}" target="_blank" rel="noopener noreferrer">Abrir link</a>` : ''}
-                    </div>` : ''}
-                </div>
-            `;
-        }
-
-
-        function filterTasks() {
+        function getFilteredTasks() {
             const searchTerm = document.getElementById('searchTasks').value.toLowerCase();
             const selectedStatuses = getSelectedTaskStatuses();
             const selectedOrigin = document.getElementById('filterTaskOrigin') ? document.getElementById('filterTaskOrigin').value : '';
@@ -2481,7 +3019,166 @@
             }
             else if (sortBy === 'entrega') filtered.sort((a, b) => (new Date(a.deadline || '9999-12-31')) - (new Date(b.deadline || '9999-12-31')));
 
-            displayTasks(filtered);
+            return filtered;
+        }
+
+        function getFilteredFeedback() {
+            const searchTerm = document.getElementById('searchFeedback').value.toLowerCase();
+            const statusFilter = document.getElementById('filterFeedbackStatus').value;
+            const typeFilter = document.getElementById('filterFeedbackType').value;
+            const functionalityFilter = document.getElementById('filterFeedbackFunctionality').value;
+            const priorityFilter = document.getElementById('filterFeedbackPriority').value;
+
+            return feedbackData.filter(feedback => {
+                const descriptionText = stripHtml(feedback.descricao || '').toLowerCase();
+                const matchSearch =
+                    (feedback.titulo || '').toLowerCase().includes(searchTerm) ||
+                    (feedback.nome_responsavel || '').toLowerCase().includes(searchTerm) ||
+                    (feedback.unidade || '').toLowerCase().includes(searchTerm) ||
+                    descriptionText.includes(searchTerm);
+
+                const matchStatus = !statusFilter || feedback.status === statusFilter;
+                const matchType = !typeFilter || feedback.tipo_apontamento === typeFilter;
+                const matchFunctionality = !functionalityFilter || feedback.funcionalidade === functionalityFilter;
+                const matchPriority = !priorityFilter || feedback.prioridade === priorityFilter;
+
+                return matchSearch && matchStatus && matchType && matchFunctionality && matchPriority;
+            });
+        }
+
+        function getFilteredMinutes() {
+            const term = document.getElementById('searchMinutes').value.toLowerCase();
+            return minutesData.filter(m =>
+                m.achievements.toLowerCase().includes(term) ||
+                (m.participants && m.participants.toLowerCase().includes(term)) ||
+                m.date.includes(term)
+            );
+        }
+
+        function buildPdfHeader(sectionTitle) {
+            return `
+                <div style="text-align:center; margin-bottom:18px; border-bottom:2px solid #232427; padding-bottom:12px;">
+                    <h1 style="margin:0; font-size:24px; color:#232427;">Sistema SESI Esporte</h1>
+                    <p style="margin:6px 0 0; color:#6b7280; font-size:12px; text-transform:uppercase; letter-spacing:.08em;">Acompanhamento de Implantação</p>
+                    <p style="margin:8px 0 0; color:#9ca3af; font-size:11px;">${sectionTitle} • ${new Date().toLocaleDateString('pt-BR')}</p>
+                </div>
+            `;
+        }
+
+        
+        function makePdf() {
+            const ctor =
+                (window.jspdf && window.jspdf.jsPDF) ||
+                window.jsPDF ||
+                (window.html2pdf && window.html2pdf.jsPDF) ||
+                null;
+            if (!ctor) {
+                alert('Biblioteca de PDF não carregada.');
+                return null;
+            }
+            return new ctor({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+        }
+
+        function pdfHeader(pdf, subtitle) {
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(15);
+            pdf.text('Sistema SESI Esporte', 15, 16);
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(8);
+            pdf.setTextColor(110, 116, 125);
+            pdf.text('Acompanhamento de implantação', 15, 22);
+            if (subtitle) {
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFontSize(12);
+                pdf.setTextColor(31, 31, 31);
+                pdf.text(subtitle, 15, 31);
+            }
+            pdf.setDrawColor(220, 224, 230);
+            pdf.line(15, 35, 195, 35);
+            pdf.setTextColor(31, 31, 31);
+            return 42;
+        }
+
+        function pdfWrap(pdf, text, x, y, maxWidth, lineHeight) {
+            const lines = pdf.splitTextToSize(String(text || '—'), maxWidth);
+            pdf.text(lines, x, y);
+            return y + (lines.length * lineHeight);
+        }
+
+        function sanitizePdfText(value) {
+            return String(value || '—')
+                .normalize('NFKD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[“”]/g, '"')
+                .replace(/[‘’]/g, "'")
+                .replace(/[–—]/g, '-')
+                .replace(/[→]/g, '->')
+                .replace(/Ø=Ý9|Ø=Y9|Ø=Ý|Ø=/g, '- ')
+                .replace(/!['’]/g, ' -> ')
+                .replace(/>>/g, ' > ')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        function pdfLabeledLine(pdf, label, value, x, y, width, lineHeight = 4.4) {
+            const text = `${label} ${sanitizePdfText(value)}`;
+            const lines = pdf.splitTextToSize(text, width);
+            pdf.text(lines, x, y);
+            return y + (lines.length * lineHeight);
+        }
+
+        function pdfStatusColor(status) {
+            if (status === 'pending' || status === 'novo' || status === 'em_analise') return [241,121,80];
+            if (status === 'in-progress' || status === 'transformado_em_tarefa') return [120,81,124];
+            if (status === 'completed') return [131,209,196];
+            if (status === 'arquivado') return [185,190,199];
+            return [139,144,151];
+        }
+
+        function ensurePdfPage(pdf, y, extra = 20, subtitle = '') {
+            if (y + extra <= 285) return y;
+            pdf.addPage();
+            return pdfHeader(pdf, subtitle);
+        }
+
+
+        function setTaskViewMode(mode) {
+            currentTaskView = mode;
+            const cardsBtn = document.getElementById('viewCardsBtn');
+            const listBtn = document.getElementById('viewListBtn');
+            if (cardsBtn) cardsBtn.classList.toggle('active', mode === 'cards');
+            if (listBtn) listBtn.classList.toggle('active', mode === 'list');
+            filterTasks();
+        }
+
+        function toggleTaskDetails(taskId) {
+            const details = document.getElementById(`task-details-${taskId}`);
+            const trigger = document.getElementById(`task-details-trigger-${taskId}`);
+            if (!details) return;
+            const isOpen = details.classList.toggle('is-open');
+            if (trigger) trigger.textContent = isOpen ? '✕' : 'ⓘ';
+        }
+
+        function renderTaskDetails(task) {
+            const hasNotes = task.notes && task.notes.trim();
+            const hasAttachment = task.attachmentUrl;
+            const hasLink = task.link;
+            if (!hasNotes && !hasAttachment && !hasLink) return '';
+
+            return `
+                <div class="task-details" id="task-details-${task.id}">
+                    ${hasNotes ? `<div class="item-description">${escapeHtml(task.notes)}</div>` : ''}
+                    ${(hasAttachment || hasLink) ? `<div class="feedback-actions" style="margin-top:12px;">
+                        ${hasAttachment ? `<button class="btn-inline is-ghost" onclick="openAttachment('${task.attachmentUrl}')">Ver anexo</button>` : ''}
+                        ${hasLink ? `<a class="btn-inline is-ghost" href="${task.link}" target="_blank" rel="noopener noreferrer">Abrir link</a>` : ''}
+                    </div>` : ''}
+                </div>
+            `;
+        }
+
+
+        function filterTasks() {
+            displayTasks(getFilteredTasks());
         }
 
         function displayTasks(tasks) {
@@ -2491,83 +3188,69 @@
                 return;
             }
 
-            const cardsHtml = tasks.map(task => {
-                const today = new Date(); today.setHours(0,0,0,0);
-                const deadline = task.deadline ? new Date(task.deadline + 'T00:00:00') : null;
-                let dClass = '', dText = task.deadline ? `Entrega: ${formatDate(task.deadline)}` : '';
-
-                if (deadline) {
-                    const diff = Math.floor((deadline - today) / 86400000);
-                    if (diff < 0) { dClass = 'date-overdue'; dText = `Atrasado ${Math.abs(diff)} dias`; }
-                    else if (diff <= 2) { dClass = 'date-warning'; dText = `Faltam ${diff} dias`; }
-                }
-
-                return `
-                    <div class="item-card status-${task.status}">
-                        <div class="item-content">
-                            <div class="item-title">${task.description}</div>
-                            <div class="item-meta">
-                                <span class="item-badge badge-${task.status}">${getStatusLabel(task.status)}</span>
-                                <span class="item-badge badge-origin">${getTaskOriginLabel(task.origin || 'manual')}</span>
-                                ${task.priority ? `<span class="item-badge badge-phase">${escapeHtml(task.priority)}</span>` : ''}
-                                ${task.unit ? `<span class="item-badge badge-phase">${escapeHtml(task.unit)}</span>` : ''}
-                                ${task.responsible ? `<span class="item-responsible">${escapeHtml(task.responsible)}</span>` : ''}
-                            </div>
-                            <div class="item-dates">
-                                <span>${formatDate(task.date)}</span>
-                                ${dText ? `<span class="${dClass}">${dText}</span>` : ''}
-                            </div>
-                            <div class="quick-actions" style="margin-top:12px;">
-                                <button class="quick-icon-btn" title="Ver detalhes" id="task-details-trigger-${task.id}" onclick="toggleTaskDetails('${task.id}')">ⓘ</button>
-                                ${task.attachmentUrl ? `<button class="quick-icon-btn" title="Ver anexo" onclick="openAttachment('${task.attachmentUrl}')">📎</button>` : `<span style="width:34px;height:34px;display:inline-block;"></span>`}
-                            </div>
-                            ${renderTaskDetails(task)}
-                        </div>
-                        <div class="item-actions">
-                            <button class="btn-icon" onclick="editTask('${task.id}')" ${isViewOnly ? 'disabled' : ''}>Editar</button>
-                            <button class="btn-icon btn-delete" onclick="deleteTask('${task.id}')" ${isViewOnly ? 'disabled' : ''}>Excluir</button>
-                        </div>
-                    </div>`;
-            }).join('');
-
             const listHtml = tasks.map(task => {
                 const today = new Date(); today.setHours(0,0,0,0);
                 const deadline = task.deadline ? new Date(task.deadline + 'T00:00:00') : null;
-                let dClass = '', dText = task.deadline ? formatDate(task.deadline) : '—';
+                let deadlineClass = task.deadline ? 'date-on-track' : '';
+                let deadlineText = task.deadline ? formatDate(task.deadline) : '—';
 
                 if (deadline) {
                     const diff = Math.floor((deadline - today) / 86400000);
-                    if (diff < 0) { dClass = 'date-overdue'; dText = `Atrasado ${Math.abs(diff)} dias`; }
-                    else if (diff <= 2) { dClass = 'date-warning'; dText = `Faltam ${diff} dias`; }
+                    if (diff < 0) { deadlineClass = 'date-overdue'; deadlineText = `Atrasado ${Math.abs(diff)} dias`; }
+                    else if (diff <= 2) { deadlineClass = 'date-warning'; deadlineText = `Faltam ${diff} dias`; }
+                    else { deadlineClass = 'date-on-track'; deadlineText = `No prazo`; }
                 }
 
                 return `
                     <div class="item-card status-${task.status}">
-                        <div class="item-content">
-                            <div class="item-title">${task.description}</div>
-                            <div class="item-meta">
-                                <span class="item-badge badge-${task.status}">${getStatusLabel(task.status)}</span>
-                                <span class="item-badge badge-origin">${getTaskOriginLabel(task.origin || 'manual')}</span>
-                                ${task.responsible ? `<span class="item-responsible">${escapeHtml(task.responsible)}</span>` : ''}
+                        <div class="item-content data-grid compact-task-grid">
+                            <div class="field-stack compact-main">
+                                <span class="field-label">Tarefa</span>
+                                <div class="field-value">${escapeHtml(task.description || '—')}</div>
                             </div>
-                            <div class="item-dates">
-                                <span>${formatDate(task.date)}</span>
-                                <span class="${dClass}">${dText}</span>
+                            <div class="field-stack">
+                                <span class="field-label">Status</span>
+                                <div class="compact-inline-badges">
+                                    <span class="item-badge badge-${task.status}">${getStatusLabel(task.status)}</span>
+                                </div>
                             </div>
-                            <div class="quick-actions">
-                                <button class="quick-icon-btn" title="Ver detalhes" id="task-details-trigger-${task.id}" onclick="toggleTaskDetails('${task.id}')">ⓘ</button>
-                                ${task.attachmentUrl ? `<button class="quick-icon-btn" title="Ver anexo" onclick="openAttachment('${task.attachmentUrl}')">📎</button>` : `<span style="width:34px;height:34px;display:inline-block;"></span>`}
+                            <div class="field-stack">
+                                <span class="field-label">Origem</span>
+                                <div class="compact-inline-badges">
+                                    <span class="item-badge badge-origin">${getTaskOriginLabel(task.origin || 'manual')}</span>
+                                </div>
                             </div>
-                            ${renderTaskDetails(task)}
-                        </div>
-                        <div class="item-actions">
-                            <button class="btn-icon" onclick="editTask('${task.id}')" ${isViewOnly ? 'disabled' : ''}>Editar</button>
-                            <button class="btn-icon btn-delete" onclick="deleteTask('${task.id}')" ${isViewOnly ? 'disabled' : ''}>Excluir</button>
+                            <div class="field-stack">
+                                <span class="field-label">Responsável</span>
+                                <div class="field-value">${escapeHtml(task.responsible || '—')}</div>
+                            </div>
+                            <div class="field-stack">
+                                <span class="field-label">Data</span>
+                                <div class="field-value compact-date">${formatDate(task.date)}</div>
+                            </div>
+                            <div class="field-stack">
+                                <span class="field-label">Prazo</span>
+                                <div class="field-value compact-date ${deadlineClass}">${deadlineText}</div>
+                            </div>
+                            <div class="field-stack compact-actions-wrap">
+                                <span class="field-label">Ações rápidas</span>
+                                <div class="quick-actions">
+                                    <button class="quick-icon-btn" title="Ver detalhes" onclick="openTaskDetailsModal('${task.id}')">ⓘ</button>
+                                    ${task.attachmentUrl ? `<button class="quick-icon-btn" title="Ver anexo" onclick="openAttachment('${task.attachmentUrl}')">📎</button>` : ''}
+                                </div>
+                            </div>
+                            <div class="field-stack">
+                                <span class="field-label">Gestão</span>
+                                <div class="item-actions">
+                                    <button class="btn-icon" onclick="editTask('${task.id}')" ${isViewOnly ? 'disabled' : ''}>Editar</button>
+                                    <button class="btn-icon btn-delete" onclick="deleteTask('${task.id}')" ${isViewOnly ? 'disabled' : ''}>Excluir</button>
+                                </div>
+                            </div>
                         </div>
                     </div>`;
             }).join('');
 
-            list.innerHTML = `<div class="items-list ${currentTaskView === 'list' ? 'task-list-view' : ''}">${currentTaskView === 'list' ? listHtml : cardsHtml}</div>`;
+            list.innerHTML = `<div class="items-list task-list-view">${listHtml}</div>`;
         }
 
         function renderKanban() {
@@ -2618,6 +3301,60 @@
             `).join('');
         }
 
+
+        function openTaskDetailsModal(id) {
+            const task = tasksData.find(item => item.id === id);
+            if (!task) return;
+
+            const titleEl = document.querySelector('#taskDetailsModal .modal-title');
+            if (titleEl) titleEl.textContent = 'Detalhes';
+
+            document.getElementById('taskDetailsContent').innerHTML = `
+                <div class="form-group">
+                    <label>Tarefa</label>
+                    <div class="feedback-rich-text"><strong>${escapeHtml(task.description || '—')}</strong></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Status</label>
+                        <div class="feedback-rich-text">${getStatusLabel(task.status)}</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Origem</label>
+                        <div class="feedback-rich-text">${getTaskOriginLabel(task.origin || 'manual')}</div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Responsável</label>
+                        <div class="feedback-rich-text">${escapeHtml(task.responsible || '—')}</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Data</label>
+                        <div class="feedback-rich-text">${formatDate(task.date) || '—'}</div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Prazo</label>
+                        <div class="feedback-rich-text">${task.deadline ? formatDate(task.deadline) : '—'}</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Prioridade</label>
+                        <div class="feedback-rich-text">${escapeHtml(task.priority || '—')}</div>
+                    </div>
+                </div>
+                ${task.notes ? `<div class="form-group"><label>Observações</label><div class="feedback-rich-text">${escapeHtml(task.notes).replace(/\n/g,'<br>')}</div></div>` : ''}
+                ${(task.attachmentUrl || task.link) ? `<div class="form-group"><label>Ações relacionadas</label><div class="feedback-actions" style="margin-top:0;">${task.attachmentUrl ? `<button class="btn-inline" onclick="openAttachment('${task.attachmentUrl}')">Abrir anexo</button>` : ''}${task.link ? `<a class="btn-inline" href="${task.link}" target="_blank" rel="noopener noreferrer">Abrir link</a>` : ''}</div></div>` : ''}
+            `;
+
+            document.getElementById('taskDetailsModal').classList.add('active');
+        }
+
+        function closeTaskDetailsModal() {
+            document.getElementById('taskDetailsModal').classList.remove('active');
+        }
+
         function handleKanbanDragStart(event, id) {
             currentDraggedTaskId = id;
             event.dataTransfer.effectAllowed = 'move';
@@ -2663,13 +3400,7 @@
         }
 
         function filterMinutes() {
-            const term = document.getElementById('searchMinutes').value.toLowerCase();
-            const filtered = minutesData.filter(m => 
-                m.achievements.toLowerCase().includes(term) || 
-                (m.participants && m.participants.toLowerCase().includes(term)) || 
-                m.date.includes(term)
-            );
-            displayMinutes(filtered);
+            displayMinutes(getFilteredMinutes());
         }
 
         function displayMinutes(minutes) {
@@ -2684,8 +3415,8 @@
                     <div class="item-content">
                         <div class="item-title">${formatDate(m.date)}</div>
                         ${m.participants ? `<div class="item-description"><strong>Participantes:</strong> ${m.participants}</div>` : ''}
-                        <div class="item-description"><strong>ALINHAMENTOS:</strong><br>${m.achievements}</div>
-                        ${m.notes ? `<div class="item-description"><strong>OBS:</strong><br>${m.notes}</div>` : ''}
+                        <div class="item-description"><strong>Alinhamentos:</strong><br>${m.achievements}</div>
+                        ${m.notes ? `<div class="item-description"><strong>Obs:</strong><br>${m.notes}</div>` : ''}
                     </div>
                     <div class="item-actions">
                         <button class="btn-icon" onclick="editMinutes('${m.id}')" ${isViewOnly ? 'disabled' : ''}>Editar</button>
@@ -2757,160 +3488,260 @@
         }
 
         // ===== EXPORTAÇÃO PDF PROFISSIONAL =====
+        
+        
         function exportTasksToPDF() {
-            const doc = document.createElement('div');
-            doc.style.cssText = 'width: 190mm; padding: 15mm; font-family: Arial, sans-serif; color: #111827; page-break-after: always;';
-            
-            const header = `
-                <div style="text-align: center; margin-bottom: 15px; border-bottom: 3px solid #1e40af; padding-bottom: 10px;">
-                    <h1 style="color: #1e40af; margin: 0; font-size: 24px;">Sistema SESI Esporte</h1>
-                    <p style="color: #6b7280; margin: 5px 0 0 0; font-size: 12px;">Relatório de Tarefas</p>
-                    <p style="color: #9ca3af; margin: 5px 0 0 0; font-size: 11px;">Gerado em ${new Date().toLocaleDateString('pt-BR')}</p>
-                </div>
-            `;
+            const items = getFilteredTasks();
+            const pdf = makePdf();
+            if (!pdf) return;
+            let y = pdfHeader(pdf, 'Tarefas');
 
-            const stats = `
-                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px;">
-                    <div style="background: #dbeafe; padding: 12px; border-radius: 8px; text-align: center;">
-                        <p style="color: #1e40af; font-weight: bold; font-size: 20px; margin: 0;">${tasksData.length}</p>
-                        <p style="color: #1e40af; font-size: 11px; margin: 3px 0 0 0;">Total</p>
-                    </div>
-                    <div style="background: #fef3c7; padding: 12px; border-radius: 8px; text-align: center;">
-                        <p style="color: #f59e0b; font-weight: bold; font-size: 20px; margin: 0;">${tasksData.filter(t => t.status === 'pending').length}</p>
-                        <p style="color: #f59e0b; font-size: 11px; margin: 3px 0 0 0;">Pendentes</p>
-                    </div>
-                    <div style="background: #dbeafe; padding: 12px; border-radius: 8px; text-align: center;">
-                        <p style="color: #1e40af; font-weight: bold; font-size: 20px; margin: 0;">${tasksData.filter(t => t.status === 'in-progress').length}</p>
-                        <p style="color: #1e40af; font-size: 11px; margin: 3px 0 0 0;">Andamento</p>
-                    </div>
-                    <div style="background: #d1fae5; padding: 12px; border-radius: 8px; text-align: center;">
-                        <p style="color: #10b981; font-weight: bold; font-size: 20px; margin: 0;">${tasksData.filter(t => t.status === 'completed').length}</p>
-                        <p style="color: #10b981; font-size: 11px; margin: 3px 0 0 0;">Concluídas</p>
-                    </div>
-                </div>
-            `;
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(9);
+            pdf.setTextColor(110,116,125);
+            pdf.text(`Gerado em ${new Date().toLocaleDateString('pt-BR')}`, 15, y);
+            y += 8;
 
-            const tasks = tasksData.map(t => `
-                <div style="background: #f9fafb; padding: 12px; margin-bottom: 12px; border-left: 4px solid #1e40af; border-radius: 4px; page-break-inside: avoid;">
-                    <h3 style="margin: 0 0 8px 0; color: #111827; font-size: 13px;">${t.description}</h3>
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; font-size: 11px; color: #6b7280;">
-                        <p style="margin: 0;"><strong>Status:</strong> ${getStatusLabel(t.status)}</p>
-                                                <p style="margin: 0;"><strong>Data:</strong> ${formatDate(t.date)}</p>
-                        <p style="margin: 0;"><strong>Responsável:</strong> ${t.responsible || 'N/A'}</p>
-                    </div>
-                    ${t.notes ? `<p style="margin: 8px 0 0 0; font-size: 11px; color: #6b7280; font-style: italic;">${t.notes}</p>` : ''}
-                </div>
-            `).join('');
+            if (!items.length) {
+                pdf.setTextColor(80,85,92);
+                pdf.text('Nenhuma tarefa no filtro atual.', 15, y);
+                pdf.save(`tarefas-sesi-${new Date().toISOString().slice(0,10)}.pdf`);
+                return;
+            }
 
-            doc.innerHTML = header + stats + tasks;
-            
-            const opt = {
-                margin: [2, 10, 10, 10],
-                filename: `dashboard-sesi-${new Date().toISOString().slice(0, 10)}.pdf`,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-            html2pdf().set(opt).from(doc).save();
+            items.forEach(task => {
+                const statusColor = pdfStatusColor(task.status);
+                const deadline = task.deadline ? formatDate(task.deadline) : '—';
+                const notes = sanitizePdfText(task.notes || '');
+                y = ensurePdfPage(pdf, y, 50, 'Tarefas');
+
+                let boxY = y;
+                pdf.setDrawColor(225,228,232);
+                pdf.setFillColor(255,255,255);
+                pdf.roundedRect(15, boxY, 180, 10, 4, 4, 'FD');
+                pdf.setFillColor(...statusColor);
+                pdf.rect(15, boxY, 2, 10, 'F');
+
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFontSize(11);
+                pdf.setTextColor(31,31,31);
+                let innerY = pdfWrap(pdf, sanitizePdfText(task.description || '—'), 20, boxY + 7, 170, 5);
+
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(8.8);
+                pdf.setTextColor(70,78,88);
+                const leftX = 20;
+                const rightX = 110;
+                let leftY = innerY + 3;
+                let rightY = innerY + 3;
+
+                leftY = pdfLabeledLine(pdf, 'Status:', getStatusLabel(task.status), leftX, leftY, 78);
+                leftY = pdfLabeledLine(pdf, 'Origem:', getTaskOriginLabel(task.origin || 'manual'), leftX, leftY, 78);
+                leftY = pdfLabeledLine(pdf, 'Responsável:', task.responsible || '—', leftX, leftY, 78);
+
+                rightY = pdfLabeledLine(pdf, 'Data:', formatDate(task.date || ''), rightX, rightY, 72);
+                rightY = pdfLabeledLine(pdf, 'Prazo:', deadline, rightX, rightY, 72);
+
+                let endY = Math.max(leftY, rightY);
+                if (notes) {
+                    endY += 2;
+                    endY = pdfLabeledLine(pdf, 'Observações:', notes, leftX, endY, 162, 4.4);
+                }
+
+                const height = Math.max(24, endY - boxY + 6);
+                pdf.setDrawColor(225,228,232);
+                pdf.roundedRect(15, boxY, 180, height, 4, 4, 'S');
+                pdf.setFillColor(...statusColor);
+                pdf.rect(15, boxY, 2, height, 'F');
+                y = boxY + height + 6;
+            });
+
+            pdf.save(`tarefas-sesi-${new Date().toISOString().slice(0,10)}.pdf`);
         }
 
+
+
+        
+        
         function exportMinutesToPDF() {
-            const doc = document.createElement('div');
-            doc.style.cssText = 'width: 190mm; padding: 15mm; font-family: Arial, sans-serif; color: #111827; background: white;';
-            
-            const header = `
-                <div style="text-align: center; margin-bottom: 15px; border-bottom: 3px solid #1e40af; padding-bottom: 10px;">
-                    <h1 style="color: #1e40af; margin: 0; font-size: 24px;">Sistema SESI Esporte</h1>
-                    <p style="color: #6b7280; margin: 5px 0 0 0; font-size: 12px;">Atas de Reunião</p>
-                    <p style="color: #9ca3af; margin: 5px 0 0 0; font-size: 11px;">Gerado em ${new Date().toLocaleDateString('pt-BR')}</p>
-                </div>
-            `;
+            const items = getFilteredMinutes();
+            const pdf = makePdf();
+            if (!pdf) return;
+            let y = pdfHeader(pdf, 'Atas de Reunião');
 
-            const atas = minutesData.map(m => `
-                <div style="background: #f9fafb; padding: 12px; margin-bottom: 15px; border-left: 4px solid #1e40af; border-radius: 4px; page-break-inside: avoid;">
-                    <h3 style="margin: 0 0 8px 0; color: #1e40af; font-size: 13px; font-weight: bold;">${formatDate(m.date)}</h3>
-                    ${m.participants ? `<p style="margin: 0 0 8px 0; font-size: 11px; color: #6b7280;"><strong>Participantes:</strong> ${m.participants}</p>` : ''}
-                    <div style="background: white; padding: 8px; border-radius: 4px; margin-bottom: 8px;">
-                        <p style="margin: 0; font-size: 11px; color: #111827;"><strong>Alinhamentos:</strong></p>
-                        <p style="margin: 4px 0 0 0; font-size: 11px; color: #6b7280; white-space: pre-wrap;">${m.achievements}</p>
-                    </div>
-                    ${m.notes ? `<p style="margin: 0; font-size: 11px; color: #6b7280;"><strong>Observações:</strong> ${m.notes}</p>` : ''}
-                </div>
-            `).join('');
+            if (!items.length) {
+                pdf.setFontSize(10);
+                pdf.text('Nenhuma ata no filtro atual.', 15, y);
+                pdf.save(`atas-sesi-${new Date().toISOString().slice(0,10)}.pdf`);
+                return;
+            }
 
-            doc.innerHTML = header + atas;
-            
-            const opt = {
-                margin: 10,
-                filename: `atas-sesi-${new Date().toISOString().slice(0, 10)}.pdf`,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-            html2pdf().set(opt).from(doc).save();
+            items.forEach(minute => {
+                y = ensurePdfPage(pdf, y, 58, 'Atas de Reunião');
+                const boxY = y;
+                pdf.setDrawColor(225,228,232);
+                pdf.setFillColor(255,255,255);
+                pdf.roundedRect(15, boxY, 180, 10, 4, 4, 'FD');
+                pdf.setFillColor(139,144,151);
+                pdf.rect(15, boxY, 2, 10, 'F');
+
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFontSize(11);
+                pdf.setTextColor(31,31,31);
+                pdf.text(formatDate(minute.date), 20, boxY + 7);
+
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(8.8);
+                pdf.setTextColor(70,78,88);
+
+                let yy = boxY + 14;
+                if (minute.participants) yy = pdfLabeledLine(pdf, 'Participantes:', minute.participants, 20, yy, 168, 4.4) + 1;
+                if (minute.achievements) yy = pdfLabeledLine(pdf, 'Alinhamentos:', minute.achievements, 20, yy, 168, 4.4) + 1;
+                if (minute.notes) yy = pdfLabeledLine(pdf, 'Obs:', minute.notes, 20, yy, 168, 4.4) + 1;
+
+                const height = Math.max(24, yy - boxY + 5);
+                pdf.setDrawColor(225,228,232);
+                pdf.roundedRect(15, boxY, 180, height, 4, 4, 'S');
+                pdf.setFillColor(139,144,151);
+                pdf.rect(15, boxY, 2, height, 'F');
+                y = boxY + height + 6;
+            });
+
+            pdf.save(`atas-sesi-${new Date().toISOString().slice(0,10)}.pdf`);
         }
 
-        function exportDashboardToPDF() {
-            const doc = document.createElement('div');
-            doc.style.cssText = 'width: 190mm; padding: 15mm; font-family: Arial, sans-serif; color: #111827; background: white;';
-            
+
+
+        
+        async function exportDashboardToPDF() {
+            const pdf = makePdf();
+            if (!pdf) return;
+            let y = pdfHeader(pdf, 'Dashboard de Progresso');
+
             const total = tasksData.length;
             const pending = tasksData.filter(t => t.status === 'pending').length;
             const inProg = tasksData.filter(t => t.status === 'in-progress').length;
             const done = tasksData.filter(t => t.status === 'completed').length;
 
-            const header = `
-                <div style="text-align: center; margin-bottom: 15px; border-bottom: 3px solid #1e40af; padding-bottom: 10px;">
-                    <h1 style="color: #1e40af; margin: 0; font-size: 24px;">Sistema SESI Esporte</h1>
-                    <p style="color: #6b7280; margin: 5px 0 0 0; font-size: 12px;">Dashboard de Progresso</p>
-                    <p style="color: #9ca3af; margin: 5px 0 0 0; font-size: 11px;">Gerado em ${new Date().toLocaleDateString('pt-BR')}</p>
-                </div>
-            `;
-
-            const stats = `
-                <div style="margin-bottom: 20px;">
-                    <h2 style="color: #1e40af; font-size: 16px; margin: 0 0 12px 0; border-bottom: 2px solid #1e40af; padding-bottom: 8px;">Estatísticas Gerais</h2>
-                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
-                        <div style="background: #dbeafe; padding: 12px; border-radius: 8px; text-align: center;">
-                            <p style="color: #1e40af; font-weight: bold; font-size: 24px; margin: 0;">${total}</p>
-                            <p style="color: #1e40af; font-size: 11px; margin: 3px 0 0 0;">Total de Tarefas</p>
-                        </div>
-                        <div style="background: #fef3c7; padding: 12px; border-radius: 8px; text-align: center;">
-                            <p style="color: #f59e0b; font-weight: bold; font-size: 24px; margin: 0;">${pending}</p>
-                            <p style="color: #f59e0b; font-size: 11px; margin: 3px 0 0 0;">Pendentes</p>
-                        </div>
-                        <div style="background: #dbeafe; padding: 12px; border-radius: 8px; text-align: center;">
-                            <p style="color: #1e40af; font-weight: bold; font-size: 24px; margin: 0;">${inProg}</p>
-                            <p style="color: #1e40af; font-size: 11px; margin: 3px 0 0 0;">Em Andamento</p>
-                        </div>
-                        <div style="background: #d1fae5; padding: 12px; border-radius: 8px; text-align: center;">
-                            <p style="color: #10b981; font-weight: bold; font-size: 24px; margin: 0;">${done}</p>
-                            <p style="color: #10b981; font-size: 11px; margin: 3px 0 0 0;">Concluídas</p>
-                        </div>
-                    </div>
-                </div>
-            `;
-            doc.innerHTML = header + stats;
-            
-            const opt = {
-                margin: 10,
-                filename: `dashboard-sesi-${new Date().toISOString().slice(0, 10)}.pdf`,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-            html2pdf().set(opt).from(doc).save();
-        }
-
-        function exportTasksToCSV() {
-            let csv = 'Tarefa,Responsável,Status,Criação,Entrega,Obs\n';
-            tasksData.forEach(t => {
-                csv += `"${t.description}","${t.responsible||''}","${getStatusLabel(t.status)}","${formatDate(t.date)}","${formatDate(t.deadline)}","${t.notes||''}"\n`;
+            const boxes = [
+                ['Total de tarefas', total, [207,213,219]],
+                ['Pendentes', pending, [241,121,80]],
+                ['Em andamento', inProg, [120,81,124]],
+                ['Concluídas', done, [131,209,196]]
+            ];
+            let x = 15;
+            boxes.forEach(([label, value, color]) => {
+                pdf.setDrawColor(225,228,232);
+                pdf.setFillColor(255,255,255);
+                pdf.roundedRect(x, y, 42, 22, 4, 4, 'FD');
+                pdf.setFillColor(...color);
+                pdf.rect(x, y, 2, 22, 'F');
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFontSize(16);
+                pdf.setTextColor(31,31,31);
+                pdf.text(String(value), x + 6, y + 9);
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(8);
+                pdf.setTextColor(100,106,114);
+                pdf.text(label, x + 6, y + 16);
+                x += 45;
             });
-            downloadFile(csv, 'tarefas.csv', 'text/csv');
+            y += 30;
+
+            const canvas = document.getElementById('statusChart');
+            if (canvas) {
+                try {
+                    const img = canvas.toDataURL('image/png', 1.0);
+                    pdf.setFont('helvetica', 'bold');
+                    pdf.setFontSize(11);
+                    pdf.setTextColor(31,31,31);
+                    pdf.text('Status das tarefas', 15, y);
+                    pdf.addImage(img, 'PNG', 40, y + 6, 120, 70);
+                    y += 82;
+                } catch (e) {
+                    pdf.setFont('helvetica', 'normal');
+                    pdf.setFontSize(9);
+                    pdf.text('Não foi possível capturar o gráfico.', 15, y);
+                }
+            }
+
+            pdf.save(`dashboard-sesi-${new Date().toISOString().slice(0,10)}.pdf`);
         }
 
-        function exportMinutesToCSV() {
+
+        
+        
+        function exportFeedbackToPDF() {
+            const items = getFilteredFeedback();
+            const pdf = makePdf();
+            if (!pdf) return;
+            let y = pdfHeader(pdf, 'Feedback do Piloto');
+
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(9);
+            pdf.setTextColor(110,116,125);
+            pdf.text(`Gerado em ${new Date().toLocaleDateString('pt-BR')}`, 15, y);
+            y += 8;
+
+            if (!items.length) {
+                pdf.setTextColor(80,85,92);
+                pdf.text('Nenhum feedback no filtro atual.', 15, y);
+                pdf.save(`feedback-piloto-${new Date().toISOString().slice(0,10)}.pdf`);
+                return;
+            }
+
+            items.forEach(feedback => {
+                const statusColor = pdfStatusColor(feedback.status);
+                const desc = sanitizePdfText(stripHtml(feedback.descricao || ''));
+                y = ensurePdfPage(pdf, y, 52, 'Feedback do Piloto');
+
+                let boxY = y;
+                pdf.setDrawColor(225,228,232);
+                pdf.setFillColor(255,255,255);
+                pdf.roundedRect(15, boxY, 180, 10, 4, 4, 'FD');
+                pdf.setFillColor(...statusColor);
+                pdf.rect(15, boxY, 2, 10, 'F');
+
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFontSize(11);
+                pdf.setTextColor(31,31,31);
+                let innerY = pdfWrap(pdf, sanitizePdfText(feedback.titulo || 'Sem título'), 20, boxY + 7, 170, 5);
+
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(8.8);
+                pdf.setTextColor(70,78,88);
+                const leftX = 20;
+                const rightX = 110;
+                let leftY = innerY + 3;
+                let rightY = innerY + 3;
+
+                leftY = pdfLabeledLine(pdf, 'Status:', getFeedbackStatusLabel(feedback.status), leftX, leftY, 78);
+                leftY = pdfLabeledLine(pdf, 'Tipo:', feedback.tipo_apontamento || '—', leftX, leftY, 78);
+
+                rightY = pdfLabeledLine(pdf, 'Unidade:', feedback.unidade || '—', rightX, rightY, 72);
+                rightY = pdfLabeledLine(pdf, 'Responsável:', feedback.nome_responsavel || '—', rightX, rightY, 72);
+                rightY = pdfLabeledLine(pdf, 'Data:', formatDateTime(feedback.created_at), rightX, rightY, 72);
+
+                let endY = Math.max(leftY, rightY);
+                if (desc) {
+                    endY += 2;
+                    endY = pdfLabeledLine(pdf, 'Descrição:', desc, leftX, endY, 162, 4.4);
+                }
+
+                const height = Math.max(26, endY - boxY + 6);
+                pdf.setDrawColor(225,228,232);
+                pdf.roundedRect(15, boxY, 180, height, 4, 4, 'S');
+                pdf.setFillColor(...statusColor);
+                pdf.rect(15, boxY, 2, height, 'F');
+                y = boxY + height + 6;
+            });
+
+            pdf.save(`feedback-piloto-${new Date().toISOString().slice(0,10)}.pdf`);
+        }
+
+
+
+function exportMinutesToCSV() {
             let csv = 'Data,Participantes,Alinhamentos,Obs\n';
             minutesData.forEach(m => {
                 csv += `"${formatDate(m.date)}","${m.participants||''}","${m.achievements}","${m.notes||''}"\n`;
@@ -2973,7 +3804,7 @@
         }
 
         function getFeedbackStatusLabel(status) {
-            const map = { novo: 'Novo', em_analise: 'Em análise', transformado_em_tarefa: 'Transformado em tarefa', arquivado: 'Arquivado' };
+            const map = { novo: 'Novo', em_analise: 'Em análise', transformado_em_tarefa: 'Tarefa criada', arquivado: 'Arquivado' };
             return map[status] || status;
         }
 
@@ -2997,6 +3828,7 @@
             if (e.target === document.getElementById('minutesModal')) closeMinutesModal();
             if (e.target === document.getElementById('feedbackDetailsModal')) closeFeedbackDetailsModal();
             if (e.target === document.getElementById('feedbackTaskModal')) closeFeedbackTaskModal();
+            if (e.target === document.getElementById('taskDetailsModal')) closeTaskDetailsModal();
         };
     </script>
 </body>
