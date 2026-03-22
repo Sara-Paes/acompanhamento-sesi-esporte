@@ -713,7 +713,7 @@ th{
           </div>
           <div class="meta-item">
             <strong>Período:</strong>
-            <div class="meta-value" id="period" contenteditable="false" onblur="handleMetaBlur('periodo')">01/03/2026 - 31/12/2028</div>
+            <div class="meta-value" id="period" contenteditable="false" onblur="handleMetaBlur('periodo')">15/10/2025 - 31/12/2028</div>
           </div>
           <span class="meta-link-row"><a href="#" target="_blank" class="meta-link" id="metaLink">↗ Acompanhamento</a><button class="btn-compact secondary edit-control meta-link-edit" id="editLinkBtn" onclick="editMetaLink()">✏️ Link</button></span>
         </div>
@@ -804,7 +804,7 @@ const monthNamesPt = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out
 const monthNamesFullPt = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const monthClasses = ['m1','m2','m3','m4'];
 const weekdaysPt = ['dom','seg','ter','qua','qui','sex','sáb'];
-const START = new Date('2026-01-01T00:00:00');
+const START = new Date('2025-01-01T00:00:00');
 const END = new Date('2028-12-31T00:00:00');
 
 let activeTab = 0;
@@ -845,7 +845,7 @@ function visibleDates(){
 function initMonthFilter(){
   const el = document.getElementById('monthFilter');
   let html = '<option value="all">Todos os meses</option>';
-  for(let year = 2026; year <= 2028; year++){
+  for(let year = 2025; year <= 2028; year++){
     for(let month = 0; month < 12; month++){
       html += `<option value="${year}-${String(month).padStart(2,'0')}">${monthNamesPt[month]}/${year}</option>`;
     }
