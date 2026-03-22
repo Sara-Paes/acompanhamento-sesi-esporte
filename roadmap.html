@@ -3,31 +3,37 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Roadmap SESI Esporte</title>
+<title>Roadmap SESI Esporte | v16 Executivo</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --primary:#c41e3a;
-  --primary-dark:#8b1528;
-  --primary-light:#f5e6e8;
-  --bg:#fafbfc;
+  --primary:#c81f45;
+  --primary-dark:#8e1731;
+  --primary-light:#fbebef;
+  --primary-soft:#fff4f6;
+  --bg:#f6f7fb;
   --surface:#ffffff;
+  --surface-soft:#fcfcfd;
   --line:#e5e7eb;
-  --line-soft:#f1f5f9;
-  --weekend-divider:rgba(250,251,252,0.78);
-  --text:#1a1a1a;
-  --muted:#666666;
-  --navy:#2a2a2a;
-  /* Cores Ajustadas - Nível Premium */
-  --sede:#7ea9d6;
-  --unidades:#d98b93;
-  --tec:#a7a4d9;
-  --done:#77b796;
-  --risk:#e4b15f;
-  --gray-light:#f0f0f0;
-  --gray-medium:#d0d0d0;
+  --line-strong:#d8dde6;
+  --line-soft:#eef2f7;
+  --text:#17181c;
+  --muted:#69707d;
+  --navy:#22252b;
+  --shadow-soft:0 8px 28px rgba(20,24,40,0.06);
+  --shadow-card:0 16px 40px rgba(20,24,40,0.08);
+  --shadow-glow:0 10px 30px rgba(200,31,69,0.18);
+  /* Cores Premium refinadas */
+  --sede:#6f97c6;
+  --unidades:#cf7d88;
+  --tec:#9a96d1;
+  --done:#6eaf8b;
+  --risk:#d9a24f;
+  --gray-light:#f3f4f6;
+  --gray-medium:#d0d5dd;
+  --weekend-bg:#fff9fb;
 }
 
 *{box-sizing:border-box}
@@ -52,15 +58,15 @@ h1,h2,h3,h4,h5,h6{
   min-height:100vh;
 }
 
-/* Header Compacto - Resgatado da v5 */
+/* Header Compacto */
 .header-compact{
   background:var(--surface);
   border-bottom:1px solid var(--line);
   padding:1rem 1.5rem;
-  box-shadow:0 2px 8px rgba(0,0,0,0.04);
+  box-shadow:var(--shadow-soft);
   position:sticky;
   top:0;
-  z-index:50;
+  z-index:100;
 }
 
 .header-content{
@@ -73,23 +79,43 @@ h1,h2,h3,h4,h5,h6{
   gap:1.5rem;
 }
 
-.header-left{
-  flex:1;
-}
-
 .title{
   font-size:1.5rem;
   font-weight:900;
   margin:0 0 0.75rem 0;
   color:var(--text);
   letter-spacing:-0.02em;
-  cursor:default;
+  line-height:1.15;
+}
+
+.title .roadmap-accent{
+  display:inline-block;
+  padding:0.12rem 0.72rem 0.2rem;
+  margin-left:0.22rem;
+  border-radius:999px;
+  color:#ffffff;
+  background:linear-gradient(135deg, #b3173d, #d11f4d 58%, #e45477);
+  box-shadow:0 10px 24px rgba(200,31,69,0.18);
+  border:1px solid rgba(255,255,255,0.22);
+  position:relative;
+}
+
+.title .roadmap-accent::after{
+  content:'';
+  position:absolute;
+  inset:auto 14% -0.16rem 14%;
+  height:0.3rem;
+  border-radius:999px;
+  background:linear-gradient(90deg, rgba(200,31,69,0.16), rgba(200,31,69,0.04));
+  filter:blur(5px);
+  z-index:-1;
 }
 
 .meta-editable{
   display:flex;
   gap:1.5rem;
   flex-wrap:wrap;
+  align-items:center;
 }
 
 .meta-item{
@@ -97,7 +123,6 @@ h1,h2,h3,h4,h5,h6{
   align-items:center;
   gap:0.5rem;
   font-size:0.85rem;
-  color:var(--text);
 }
 
 .meta-item strong{
@@ -107,15 +132,14 @@ h1,h2,h3,h4,h5,h6{
 }
 
 .meta-value{
-  background:var(--gray-light);
+  background:linear-gradient(180deg,#f5f6f8,#eff1f4);
   border:1px solid var(--line);
   border-radius:0.5rem;
   padding:0.4rem 0.8rem;
   font-weight:600;
-  color:var(--text);
   cursor:pointer;
   transition:all 0.2s ease;
-  min-width:150px;
+  box-shadow:0 8px 18px rgba(200,31,69,0.18);
 }
 
 .meta-value:hover{
@@ -133,49 +157,25 @@ h1,h2,h3,h4,h5,h6{
   display:inline-flex;
   align-items:center;
   gap:0.5rem;
-  background:var(--primary-light);
+  background:linear-gradient(135deg, rgba(200,31,69,0.10), rgba(200,31,69,0.16));
   color:var(--primary);
   text-decoration:none;
   padding:0.5rem 1rem;
-  border-radius:0.5rem;
+  border-radius:0.85rem;
   font-weight:700;
   font-size:0.85rem;
+  border:1px solid rgba(200,31,69,0.08);
   transition:all 0.2s ease;
 }
 
 .meta-link:hover{
-  background:var(--primary);
+  background:linear-gradient(135deg,var(--primary),var(--primary-dark));
   color:white;
 }
 
-.header-actions{
-  display:flex;
-  gap:0.5rem;
-}
-
-.btn-icon{
-  width:2.25rem;
-  height:2.25rem;
-  border-radius:0.5rem;
-  border:1px solid var(--line);
-  background:var(--surface);
-  cursor:pointer;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:1rem;
-  transition:all 0.2s ease;
-}
-
-.btn-icon:hover{
-  background:var(--primary);
-  color:white;
-  border-color:var(--primary);
-}
-
-/* Toolbar Compacto - Resgatado da v5 */
+/* Toolbar Compacto */
 .toolbar-compact{
-  background:var(--surface);
+  background:linear-gradient(180deg,var(--surface),var(--surface-soft));
   border-bottom:1px solid var(--line);
   padding:0.75rem 1.5rem;
   display:flex;
@@ -199,35 +199,28 @@ h1,h2,h3,h4,h5,h6{
   text-transform:uppercase;
   letter-spacing:0.05em;
   color:var(--muted);
-  min-width:45px;
 }
 
 select,input{
-  height:2rem;
+  height:2.15rem;
   border-radius:0.5rem;
   border:1px solid var(--line);
   padding:0.4rem 0.75rem;
   background:var(--surface);
-  font-family:'Inter',sans-serif;
   font-size:0.8rem;
   font-weight:600;
-  color:var(--text);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.75);
   transition:all 0.2s ease;
 }
 
-select:hover,input:hover{
-  border-color:var(--primary);
-  box-shadow:0 0 0 3px rgba(196,30,58,0.1);
-}
-
-select:focus,input:focus{
+select:hover,input:hover,select:focus,input:focus{
+  border-color:rgba(200,31,69,0.28);
   outline:none;
-  border-color:var(--primary);
-  box-shadow:0 0 0 3px rgba(196,30,58,0.15);
+  box-shadow:0 0 0 4px rgba(200,31,69,0.08);
 }
 
 .btn-compact{
-  height:2rem;
+  height:2.15rem;
   padding:0.4rem 0.9rem;
   border-radius:0.5rem;
   border:none;
@@ -238,27 +231,20 @@ select:focus,input:focus{
   font-size:0.8rem;
   display:inline-flex;
   align-items:center;
-  justify-content:center;
   gap:0.4rem;
-  white-space:nowrap;
   transition:all 0.2s ease;
 }
 
 .btn-compact:hover{
   background:var(--primary-dark);
-  box-shadow:0 4px 12px rgba(196,30,58,0.25);
   transform:translateY(-1px);
 }
 
 .btn-compact.secondary{
-  background:var(--gray-light);
+  background:linear-gradient(180deg,#fbfbfc,#f0f2f5);
   color:var(--text);
   border:1px solid var(--line);
-}
-
-.btn-compact.secondary:hover{
-  background:var(--line);
-  color:var(--primary);
+  box-shadow:none;
 }
 
 /* Dropdown Menu */
@@ -274,7 +260,7 @@ select:focus,input:focus{
   min-width:150px;
   box-shadow:0 8px 16px rgba(0,0,0,0.15);
   padding:0.5rem 0;
-  z-index:100;
+  z-index:150;
   border-radius:0.5rem;
   border:1px solid var(--line);
   top:100%;
@@ -285,7 +271,6 @@ select:focus,input:focus{
 .dropdown-content button{
   color:var(--text);
   padding:0.5rem 1rem;
-  text-decoration:none;
   display:block;
   width:100%;
   text-align:left;
@@ -294,7 +279,6 @@ select:focus,input:focus{
   cursor:pointer;
   font-size:0.8rem;
   font-weight:600;
-  transition:all 0.2s ease;
 }
 
 .dropdown-content button:hover{
@@ -316,7 +300,6 @@ select:focus,input:focus{
   max-width:1920px;
   margin:0 auto;
   width:100%;
-  overflow-x:auto;
 }
 
 .tab-compact{
@@ -329,12 +312,6 @@ select:focus,input:focus{
   font-size:0.85rem;
   transition:all 0.2s ease;
   color:var(--muted);
-  white-space:nowrap;
-}
-
-.tab-compact:hover{
-  border-color:var(--primary);
-  color:var(--primary);
 }
 
 .tab-compact.active{
@@ -344,7 +321,7 @@ select:focus,input:focus{
   box-shadow:0 4px 12px rgba(196,30,58,0.25);
 }
 
-/* Legend Compacta */
+/* Legend */
 .legend-compact{
   display:flex;
   gap:0.75rem;
@@ -364,7 +341,6 @@ select:focus,input:focus{
   font-size:0.7rem;
   font-weight:700;
   text-transform:uppercase;
-  letter-spacing:0.03em;
   color:var(--muted);
 }
 
@@ -376,7 +352,7 @@ select:focus,input:focus{
   border:1px solid rgba(0,0,0,0.1);
 }
 
-/* Grid Principal - Refinado */
+/* Grid Principal */
 .content{
   flex:1;
   overflow:auto;
@@ -385,30 +361,32 @@ select:focus,input:focus{
 
 .grid-wrapper{
   overflow:auto;
-  background:var(--surface);
-  border-radius:0.75rem;
+  position:relative;
+  isolation:isolate;
+  background:linear-gradient(180deg,var(--surface),#fcfcfd);
+  border-radius:1rem;
   border:1px solid var(--line);
-  box-shadow:0 4px 16px rgba(0,0,0,0.06);
+  box-shadow:var(--shadow-card);
   max-width:1920px;
   margin:0 auto;
 }
 
 table{
-  border-collapse:collapse;
+  border-collapse:separate;
+  border-spacing:0;
   width:max-content;
   min-width:100%;
-  background:var(--surface);
 }
 
 th,td{
-  border:1px solid var(--line-soft); /* Grid mais suave */
+  border:1px solid var(--line-soft);
   text-align:center;
   font-size:0.8rem;
   padding:0.5rem 0.35rem;
 }
 
 th{
-  background:linear-gradient(135deg,var(--navy),#3a3a3a);
+  background:linear-gradient(135deg,#313742,#454d58);
   color:white;
   font-weight:700;
   text-transform:uppercase;
@@ -416,29 +394,181 @@ th{
   font-size:0.75rem;
 }
 
+
+.week{
+  background:linear-gradient(90deg,#2f3641,#454d59) !important;
+  color:#f8fafc !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.08);
+  position:relative;
+  z-index:1;
+  overflow:hidden;
+}
+
+/* Espaço Roadmap Destaque */
+.roadmap-label{
+  position:sticky;
+  left:0;
+  top:0;
+  z-index:220;
+  overflow:hidden;
+  background:linear-gradient(180deg,#ffffff,#faf7f8);
+  color:var(--navy);
+  font-family:'Sora',sans-serif;
+  font-weight:900;
+  font-size:0.95rem;
+  text-transform:uppercase;
+  letter-spacing:0.08em;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  height:100%;
+  border-right:2px solid var(--line);
+  min-width:220px !important;
+  max-width:220px !important;
+  position:sticky;
+}
+
+.roadmap-label .roadmap-pill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:166px;
+  padding:0.58rem 1.05rem;
+  border-radius:999px;
+  background:linear-gradient(135deg, #fbecf1, #f6dbe3);
+  color:#9f1638;
+  box-shadow:0 8px 18px rgba(200,31,69,0.10);
+  border:1px solid rgba(200,31,69,0.12);
+}
+
+.roadmap-sticky-spacer{
+  position:sticky;
+  left:0;
+  z-index:205;
+  min-width:220px !important;
+  max-width:220px !important;
+  width:220px !important;
+  padding:0 !important;
+  background:var(--surface);
+  border-right:2px solid var(--line);
+  box-shadow:6px 0 0 var(--surface), 1px 0 0 var(--line-strong);
+}
+
+.roadmap-sticky-spacer::after{
+  content:'';
+  position:absolute;
+  top:-1px;
+  right:-2px;
+  bottom:-1px;
+  width:8px;
+  background:var(--surface);
+  pointer-events:none;
+}
+
 .left{
   position:sticky;
   left:0;
   background:var(--surface);
-  z-index:10;
+  z-index:210;
+  overflow:hidden;
   text-align:left;
   padding:0.5rem 0.75rem;
-  min-width:220px;
   font-weight:700;
   color:var(--text);
   border-right:2px solid var(--line);
   font-size:0.85rem;
+  min-width:220px !important;
+  max-width:220px !important;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+
+/* Blindagem da coluna fixa ao rolar horizontalmente */
+.roadmap-label,
+.left{
+  background-clip:padding-box;
+}
+
+.roadmap-label::after,
+.left::after{
+  content:'';
+  position:absolute;
+  top:-1px;
+  right:-2px;
+  bottom:-1px;
+  width:8px;
+  background:inherit;
+  pointer-events:none;
+}
+
+.roadmap-label{
+  box-shadow:6px 0 0 var(--surface), 1px 0 0 var(--line-strong);
+}
+
+.left{
+  box-shadow:6px 0 0 var(--surface), 1px 0 0 var(--line);
 }
 
 .left.group{
-  background:linear-gradient(90deg,rgba(196,30,58,0.08),transparent);
+  background:linear-gradient(90deg,rgba(200,31,69,0.09),rgba(200,31,69,0.02) 55%,transparent);
   color:var(--text);
   text-transform:uppercase;
   font-size:0.7rem;
   letter-spacing:0.08em;
   font-weight:800;
   border-left:4px solid var(--primary);
+  box-shadow:inset 0 -1px 0 rgba(200,31,69,0.05);
   border-right:none;
+}
+
+.month{
+  font-weight:800;
+  font-size:0.8rem;
+  height:2.15rem;
+  color:#b3173d;
+  background:linear-gradient(180deg,#fffefe,#fff8fa);
+  text-align:left;
+  padding:0.38rem 0.55rem;
+  vertical-align:middle;
+}
+
+.month .month-pill{
+  display:inline-flex;
+  align-items:center;
+  padding:0.24rem 0.62rem;
+  border-radius:999px;
+  background:rgba(200,31,69,0.08);
+  border:1px solid rgba(200,31,69,0.12);
+  color:#b3173d;
+  font-size:0.76rem;
+  font-weight:800;
+  letter-spacing:0.01em;
+  line-height:1;
+}
+
+.weekday, .day{
+  height:1.2rem;
+  font-size:0.65rem;
+  font-weight:600;
+  color:var(--muted);
+}
+
+/* Destaque Fim de Semana - APENAS CABEÇALHO */
+.weekend-header{
+  background:linear-gradient(180deg,#fffdfd,var(--weekend-bg)) !important;
+  color:var(--primary) !important;
+  font-weight:800 !important;
+}
+
+.cell{
+  height:2.8rem;
+  background:linear-gradient(180deg,#ffffff,#fafbfc);
+  cursor:pointer;
+  position:relative;
+  min-width:38px;
+  transition:all 0.2s ease;
 }
 
 .cell.group-row{
@@ -446,65 +576,10 @@ th{
   border-top:2px solid rgba(196,30,58,0.15);
 }
 
-.month{
-  font-weight:700;
-  font-size:0.75rem;
-  height:1.8rem;
-  background:linear-gradient(180deg,rgba(196,30,58,0.08),transparent);
-  color:var(--primary);
-}
-
-.month.m1{background:linear-gradient(180deg,rgba(126,169,214,0.1),transparent);color:#7ea9d6}
-.month.m2{background:linear-gradient(180deg,rgba(217,139,147,0.1),transparent);color:#d98b93}
-.month.m3{background:linear-gradient(180deg,rgba(119,183,150,0.1),transparent);color:#77b796}
-.month.m4{background:linear-gradient(180deg,rgba(228,177,95,0.1),transparent);color:#e4b15f}
-
-.week{
-  height:1.5rem;
-  font-size:0.75rem;
-  font-weight:700;
-  color:var(--muted);
-  background:var(--gray-light);
-}
-
-.weekday{
-  height:1.2rem;
-  font-size:0.65rem;
-  font-weight:600;
-  color:var(--muted);
-  background:var(--surface);
-}
-
-.day{
-  background:var(--surface);
-  height:1.5rem;
-  min-width:38px;
-  font-weight:700;
-  color:var(--text);
-  font-size:0.8rem;
-}
-
-.cell{
-  height:2.8rem;
-  background:var(--surface);
-  cursor:pointer;
-  position:relative;
-  min-width:38px;
-  transition:all 0.2s ease;
-}
-
-.cell:active{
-  transform:scale(0.96);
-}
-
-.cell:hover{
-  background:var(--bg);
-}
-
-/* Barras "Sem Costura" e com Profundidade */
+/* Barras Premium */
 .bar{
   position:absolute;
-  inset:0.3rem 0; /* Cobre as linhas verticais */
+  inset:0.34rem 0;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -517,31 +592,29 @@ th{
   letter-spacing:0.02em;
   color:white;
   z-index:5;
-  box-shadow:0 2px 4px rgba(0,0,0,0.1);
+  box-shadow:0 8px 16px rgba(24,28,36,0.10), inset 0 1px 0 rgba(255,255,255,0.22);
   transition:all 0.2s ease;
 }
 
 .bar.start{ border-radius:6px 0 0 6px; left:0.3rem; }
-.bar.middle{ border-radius:0; left:-1px; right:-1px; } /* Sobreposição para esconder grid */
+.bar.middle{ border-radius:0; left:-1px; right:-1px; }
 .bar.end{ border-radius:0 6px 6px 0; right:0.3rem; }
 .bar.single{ border-radius:6px; inset:0.3rem; }
 
-.cell:hover .bar{
-  transform:translateY(-1px);
-  box-shadow:0 4px 8px rgba(0,0,0,0.15);
-  z-index:10;
+.bar.sede{background:linear-gradient(135deg, #7ca5d4, #648fbe)}
+.bar.unidades{background:linear-gradient(135deg, #da8b95, #c8717d)}
+.bar.tec{background:linear-gradient(135deg, #a7a2db, #8d87c8)}
+.bar.done{background:linear-gradient(135deg, #7abd97, #5da57d)}
+.bar.risk{background:linear-gradient(135deg, #e3b261, #cf943f)}
+
+.selected-row-active{
+  background:rgba(200,31,69,0.05) !important;
 }
 
-.bar.sede{background:var(--sede)}
-.bar.unidades{background:var(--unidades)}
-.bar.tec{background:var(--tec)}
-.bar.done{background:var(--done)}
-.bar.risk{background:var(--risk)}
-
-.selected{
-  outline:2px solid var(--primary);
+.selected-cell-active{
+  outline:2px solid rgba(200,31,69,0.28);
   outline-offset:-2px;
-  box-shadow:inset 0 0 0 2px rgba(196,30,58,0.2);
+  background:linear-gradient(180deg, rgba(200,31,69,0.05), rgba(200,31,69,0.02)) !important;
 }
 
 /* Modo Apresentação */
@@ -549,8 +622,6 @@ th{
 .presentation .tabs-compact{
   display:none;
 }
-.presentation .title[contenteditable],.presentation [contenteditable]{pointer-events:none}
-.presentation .cell{cursor:default}
 .presentation .exit-btn{display:flex}
 
 .exit-btn{
@@ -576,190 +647,56 @@ th{
   transform:scale(1.05);
 }
 
-
-.roadmap-spacer{
-  background:transparent !important;
-  border:none !important;
-  padding:0 !important;
-  height:0.1px !important;
-  line-height:0 !important;
-  font-size:0 !important;
-}
-
-.group-title{
-  background:#fcf7f8;
-  color:#2a2a2a;
-  font-weight:800;
-  letter-spacing:0.08em;
-  text-transform:uppercase;
-  border-left:6px solid #cf2342;
-}
-
-.roadmap-label{
-  font-family:'Sora',sans-serif;
-  font-size:1.18rem;
-  font-weight:800;
-  letter-spacing:0.18em;
-  text-transform:uppercase;
-  color:#ffffff;
-  text-align:center;
-  vertical-align:middle;
-  height:56px;
-  padding:0 1rem !important;
-  background:linear-gradient(135deg,#b51632 0%, #cf2342 55%, #e14b68 100%);
-  border-right:1px solid #d9dde4;
-  border-bottom:1px solid #d9dde4;
-  box-shadow:inset 0 -1px 0 rgba(255,255,255,0.18);
-}
-
-
-/* Realce sutil de sábado e domingo + divisória vertical discreta */
-.weekday.weekend-sat,
-.day.weekend-sat{
-  background:rgba(196,30,58,0.022) !important;
-}
-
-.weekday.weekend-sun,
-.day.weekend-sun{
-  background:rgba(196,30,58,0.038) !important;
-}
-
-.weekday.weekend-sat,
-.day.weekend-sat,
-.cell.weekend-sat{
-  position:relative;
-}
-
-.weekday.weekend-sat::before,
-.day.weekend-sat::before,
-.cell.weekend-sat::before{
-  content:"";
-  position:absolute;
-  top:-1px;
-  bottom:-1px;
-  left:-1px;
-  width:1px;
-  background:var(--weekend-divider);
-  pointer-events:none;
-}
-
+/* Otimização PDF */
 @media print{
-  .weekday.weekend-sat,
-  .day.weekend-sat{
-    background:rgba(0,0,0,0.03) !important;
+  @page{ size:A3 landscape; margin:8mm; }
+  html,body{ width:100%; height:auto !important; }
+  body{ background:white; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .container{ min-height:auto !important; }
+  .toolbar-compact, .tabs-compact, .exit-btn, .dropdown{ display:none !important; }
+  .header-compact{ position:static !important; box-shadow:none !important; border-bottom:1px solid var(--line) !important; padding:0 0 6mm 0 !important; margin-bottom:3mm !important; }
+  .header-actions{ display:none !important; }
+  .legend-compact{ background:white !important; border:none !important; padding:2mm 0 4mm 0 !important; margin-bottom:2mm !important; }
+  .content{ padding:0 !important; overflow:visible !important; }
+  .grid-wrapper{ overflow:visible !important; border:none !important; box-shadow:none !important; width:100% !important; max-width:none !important; border-radius:0 !important; margin:0 !important; background:white !important; }
+  table{ width:auto !important; min-width:100% !important; table-layout:auto !important; }
+  th,td{ padding:0.26rem 0.18rem !important; font-size:7.5pt !important; }
+  .roadmap-label, .roadmap-sticky-spacer, .left{ position:static !important; left:auto !important; box-shadow:none !important; }
+  .roadmap-label{ background:white !important; color:var(--navy) !important; min-width:54mm !important; width:54mm !important; max-width:54mm !important; border-right:1px solid var(--line) !important; }
+  .roadmap-label::after, .left::after, .roadmap-sticky-spacer::after{ display:none !important; }
+  .roadmap-label .roadmap-pill{ box-shadow:none !important; min-width:auto !important; padding:2.4mm 5mm !important; font-size:11pt !important; }
+  .left{ min-width:54mm !important; width:54mm !important; max-width:54mm !important; border-right:1px solid var(--line) !important; white-space:normal !important; overflow:visible !important; text-overflow:clip !important; word-break:normal !important; overflow-wrap:anywhere !important; }
+  .left.group{ font-size:8pt !important; }
+  .month{ height:10mm !important; padding:1.2mm 1.6mm !important; text-align:left !important; }
+  .month .month-pill{ font-size:8pt !important; padding:1.2mm 2.2mm !important; white-space:nowrap !important; }
+  .week{ font-size:9pt !important; height:8mm !important; }
+  .dayname, .daynum{ font-size:7.1pt !important; }
+  .bar{ font-size:6.2pt !important; line-height:1.15 !important; }
+  body.printing .header-compact::after{
+    content:'Exportação em PDF · filtro: ' attr(data-print-scope);
+    display:block;
+    margin-top:3mm;
+    color:var(--muted);
+    font-size:10pt;
+    font-weight:600;
   }
-
-  .weekday.weekend-sun,
-  .day.weekend-sun{
-    background:rgba(0,0,0,0.045) !important;
-  }
-
-  .weekday.weekend-sat::before,
-  .day.weekend-sat::before,
-  .cell.weekend-sat::before{
-    background:rgba(255,255,255,0.7) !important;
-  }
+  body.printing.print-single-month .month{ display:none !important; }
+  body.printing.print-single-month .roadmap-label{ border-top:1px solid var(--line) !important; }
 }
 
-@media print{
-
-  @page{size:A3 landscape;margin:10mm}
-
-  body{
-    background:white;
-  }
-
-  .header-compact{
-    padding:0.5rem 1rem;
-    box-shadow:none;
-    position:static;
-  }
-
-  .title{
-    font-size:1.2rem;
-  }
-
-  .meta-editable{
-    gap:0.5rem;
-  }
-
-  .meta-value{
-    background:white;
-    border:none;
-    padding:0;
-  }
-
-  .roadmap-label{
-    font-size:0.9rem;
-    color:white;
-    background:#8f1d2f;
-    text-align:center;
-    letter-spacing:0.12em;
-  }
-
-  .roadmap-spacer{
-    border:none !important;
-    background:white !important;
-  }
-
-  .bar{
-    box-shadow:none;
-  }
-
-  th{
-    background:#2a2a2a !important;
-    color:white !important;
-  }
-
-  .month{
-    background:#f5f5f5 !important;
-    color:#333 !important;
-  }
-
-  .cell{
-    height:2.2rem;
-  }
-
-  .toolbar-compact,.tabs-compact,.exit-btn,.legend-compact{
-    display:none !important;
-  }
-
-  .content{
-    padding:0;
-  }
-
-  .grid-wrapper{
-    overflow:visible;
-    border:0;
-    box-shadow:none;
-    border-radius:0;
-  }
-
-  table{
-    width:100% !important;
-    min-width:0 !important;
-    table-layout:fixed;
-  }
-
-  .left{
-    position:static !important;
-    min-width:190px;
-    width:190px;
-  }
-
-  .meta-link{
-    display:none !important;
-  }
+@media (max-width:1100px){
+  .header-content{flex-direction:column;}
+  .header-actions{align-self:flex-end;}
 }
+
 </style>
 </head>
 <body>
 <div class="container" id="app">
-  <!-- Header Compacto -->
   <div class="header-compact">
     <div class="header-content">
       <div class="header-left">
-        <h1 class="title" id="mainTitle" contenteditable>Sistema SESI Esporte</h1>
+        <h1 class="title" id="mainTitle" contenteditable onblur="stylizeTitle()">Sistema SESI Esporte | Roadmap</h1>
         <div class="meta-editable">
           <div class="meta-item">
             <strong>Líderes:</strong>
@@ -779,7 +716,6 @@ th{
     </div>
   </div>
 
-  <!-- Toolbar Compacto -->
   <div class="toolbar-compact">
     <div class="toolbar-group-compact">
       <span class="toolbar-label">Tipo</span>
@@ -792,19 +728,15 @@ th{
         <option value="clear">Limpar</option>
       </select>
     </div>
-
     <div class="toolbar-group-compact">
       <span class="toolbar-label">Texto</span>
       <input id="text" placeholder="Descrição" style="width:150px">
     </div>
-
     <button class="btn-compact" onclick="applyText()">✓ Aplicar</button>
-
     <div class="toolbar-group-compact">
       <span class="toolbar-label">Mês</span>
       <select id="monthFilter" onchange="render()" style="width:140px"></select>
     </div>
-
     <div class="dropdown">
       <button class="btn-compact secondary">▼ Linha</button>
       <div class="dropdown-content">
@@ -813,7 +745,6 @@ th{
         <button onclick="deleteSelectedRow()">🗑️ Excluir</button>
       </div>
     </div>
-
     <div class="dropdown">
       <button class="btn-compact secondary">▼ Aba</button>
       <div class="dropdown-content">
@@ -822,7 +753,6 @@ th{
         <button onclick="deleteTab()">🗑️ Excluir</button>
       </div>
     </div>
-
     <div class="dropdown">
       <button class="btn-compact secondary">▼ Grupo</button>
       <div class="dropdown-content">
@@ -857,6 +787,7 @@ th{
 
 <script>
 const monthNamesPt = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const monthNamesFullPt = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const monthClasses = ['m1','m2','m3','m4'];
 const weekdaysPt = ['dom','seg','ter','qua','qui','sex','sáb'];
 const START = new Date('2026-01-01T00:00:00');
@@ -874,6 +805,7 @@ function buildDates(){
       iso: current.toISOString().slice(0,10),
       day: current.getDate(),
       weekday: weekdaysPt[current.getDay()],
+      isWeekend: current.getDay() === 0 || current.getDay() === 6,
       month: monthNamesPt[current.getMonth()],
       monthIndex: current.getMonth(),
       year: current.getFullYear(),
@@ -925,25 +857,19 @@ function renderTabs(){
 }
 
 function render(){
-  const weekendClass = (weekday) => {
-    const w = String(weekday || '').toLowerCase().trim();
-    if(w.startsWith('sáb') || w.startsWith('sab')) return ' weekend-sat';
-    if(w.startsWith('dom')) return ' weekend-sun';
-    return '';
-  };
   const tab = tabs[activeTab];
   const dates = visibleDates();
   let html = '';
 
-  html += "<tr><th class='left roadmap-label'>Roadmap</th>";
+  html += "<tr><th class='roadmap-label'><span class=\'roadmap-pill\'>ROADMAP</span></th>";
   dates.forEach((d, i) => {
     const cls = monthClasses[d.monthIndex % monthClasses.length];
     const showMonth = i === 0 || dates[i-1].month !== d.month;
-    html += `<td class='month ${cls}'>${showMonth ? d.month : ''}</td>`;
+    html += `<td class='month ${cls}'>${showMonth ? `<span class="month-pill">${monthNamesFullPt[d.monthIndex]} ${d.year}</span>` : ''}</td>`;
   });
   html += "</tr>";
 
-  html += "<tr><th class='left roadmap-spacer'></th>";
+  html += "<tr><th class='roadmap-sticky-spacer'></th>";
   let i = 0;
   while(i < dates.length){
     const label = dates[i].weekLabel;
@@ -954,54 +880,54 @@ function render(){
   }
   html += "</tr>";
 
-  html += "<tr><th class='left roadmap-spacer'></th>";
-  dates.forEach((d) => html += `<td class='weekday${weekendClass(d.weekday)}'>${d.weekday}</td>`);
+  html += "<tr><th class='roadmap-sticky-spacer'></th>";
+  dates.forEach((d) => {
+    const cls = d.isWeekend ? 'weekday weekend-header' : 'weekday';
+    html += `<td class='${cls}'>${d.weekday}</td>`;
+  });
   html += "</tr>";
 
-  html += "<tr><th class='left'></th>";
-  dates.forEach((d) => html += `<td class='day${weekendClass(d.weekday)}'>${d.day}</td>`);
+  html += "<tr><th class='roadmap-sticky-spacer'></th>";
+  dates.forEach((d) => {
+    const cls = d.isWeekend ? 'day weekend-header' : 'day';
+    html += `<td class='${cls}'>${d.day}</td>`;
+  });
   html += "</tr>";
 
   const rows = tab.rows;
   let taskCounter = -1;
   rows.forEach((row,rowIndex)=>{
     const leftClass = row.type==='group' ? 'left group' : 'left';
-    const selectedRowClass = selectedRowIndex===rowIndex ? " style='background:rgba(196,30,58,0.05)'" : '';
+    const selectedRowClass = selectedRowIndex===rowIndex ? " class='selected-row-active'" : '';
     html += `<tr ${selectedRowClass}><td class='${leftClass}' contenteditable='${!isPresentation()}' onclick='selectRow(${rowIndex})' onblur='updateRowName(${rowIndex}, this.innerText)'>${row.name}</td>`;
     if(row.type==='group'){
-      dates.forEach((d) => html += `<td class='cell group-row${d.weekday.startsWith('sáb') ? ' weekend-sat' : ''}'></td>`);
+      dates.forEach(() => html += `<td class='cell group-row'></td>`);
     } else {
       taskCounter++;
       const currentTaskIdx = taskCounter;
       dates.forEach((d, dIdx) => {
         const k = currentTaskIdx+'-'+d.iso;
         const cell = tab.cells[k];
-        const sel = selected.includes(k)?'selected':'';
-        
+        const sel = selected.includes(k)?'selected-cell-active':'';
         let barHtml = '';
         if(cell){
           const prevDate = dIdx > 0 ? dates[dIdx-1].iso : null;
           const nextDate = dIdx < dates.length - 1 ? dates[dIdx+1].iso : null;
           const prevCell = prevDate ? tab.cells[currentTaskIdx+'-'+prevDate] : null;
           const nextCell = nextDate ? tab.cells[currentTaskIdx+'-'+nextDate] : null;
-          
           const isStart = !prevCell || prevCell.type !== cell.type;
           const isEnd = !nextCell || nextCell.type !== cell.type;
-          
           let barClass = 'single';
           if(!isStart && !isEnd) barClass = 'middle';
           else if(isStart && !isEnd) barClass = 'start';
           else if(!isStart && isEnd) barClass = 'end';
-          
           barHtml = `<div class="bar ${cell.type} ${barClass}">${isStart ? (cell.text||'') : ''}</div>`;
         }
-        
-        html += `<td class='cell${d.weekday.startsWith('sáb') ? ' weekend-sat' : ''} ${sel}' data-key='${k}' onmousedown='startSelect("${k}")' onmouseenter='dragSelect("${k}")'>${barHtml}</td>`;
+        html += `<td class='cell ${sel}' data-key='${k}' onmousedown='startSelect("${k}")' onmouseenter='dragSelect("${k}")'>${barHtml}</td>`;
       });
     }
     html += '</tr>';
   });
-
   document.getElementById('table').innerHTML = html;
 }
 
@@ -1045,11 +971,21 @@ function applyText(){
 
 function addTask(){
   const name = prompt('Nome da atividade');
-  if(name) { tabs[activeTab].rows.push({type:'task', name}); render(); }
+  if(!name) return;
+  const rows = tabs[activeTab].rows;
+  const insertAt = selectedRowIndex !== null ? selectedRowIndex + 1 : rows.length;
+  rows.splice(insertAt, 0, {type:'task', name});
+  selectedRowIndex = insertAt;
+  render();
 }
 function addGroup(){
   const name = prompt('Nome do grupo');
-  if(name) { tabs[activeTab].rows.push({type:'group', name}); render(); }
+  if(!name) return;
+  const rows = tabs[activeTab].rows;
+  const insertAt = selectedRowIndex !== null ? selectedRowIndex + 1 : rows.length;
+  rows.splice(insertAt, 0, {type:'group', name});
+  selectedRowIndex = insertAt;
+  render();
 }
 function addTab(){
   const name = prompt('Nome da aba');
@@ -1062,30 +998,88 @@ function renameTab(){
 function deleteTab(){
   if(tabs.length > 1 && confirm('Excluir aba?')) { tabs.splice(activeTab,1); activeTab=0; renderTabs(); render(); }
 }
+
 function editSelectedRow(){
-  if(selectedRowIndex!==null){
-    const name = prompt('Editar nome', tabs[activeTab].rows[selectedRowIndex].name);
-    if(name) { tabs[activeTab].rows[selectedRowIndex].name = name; render(); }
-  }
+  if(selectedRowIndex===null) return alert('Selecione uma linha');
+  const row = tabs[activeTab].rows[selectedRowIndex];
+  if(row.type === 'group') return alert('Esta é uma linha de grupo. Use os botões de Grupo para editá-la.');
+  const name = prompt('Editar nome da atividade', row.name);
+  if(name) { row.name = name; render(); }
 }
 function deleteSelectedRow(){
-  if(selectedRowIndex!==null && confirm('Excluir linha?')){
+  if(selectedRowIndex===null) return alert('Selecione uma linha');
+  const row = tabs[activeTab].rows[selectedRowIndex];
+  if(row.type === 'group') return alert('Esta é uma linha de grupo. Use os botões de Grupo para excluí-la.');
+  if(confirm('Excluir atividade selecionada?')){
     tabs[activeTab].rows.splice(selectedRowIndex,1);
     selectedRowIndex=null;
     render();
   }
 }
 
-function exportPDF(){
-  document.body.classList.add('print-mode');
-
-  setTimeout(()=>{
-    window.print();
-    document.body.classList.remove('print-mode');
-  },200);
+function editGroup(){
+  if(selectedRowIndex===null) return alert('Selecione um grupo');
+  const row = tabs[activeTab].rows[selectedRowIndex];
+  if(row.type !== 'group') return alert('A linha selecionada não é um grupo.');
+  const name = prompt('Editar nome do grupo', row.name);
+  if(name) { row.name = name; render(); }
+}
+function deleteGroup(){
+  if(selectedRowIndex===null) return alert('Selecione um grupo');
+  const row = tabs[activeTab].rows[selectedRowIndex];
+  if(row.type !== 'group') return alert('A linha selecionada não é um grupo.');
+  if(confirm('Excluir o grupo "' + row.name + '"?')){
+    tabs[activeTab].rows.splice(selectedRowIndex,1);
+    selectedRowIndex=null;
+    render();
+  }
 }
 
+function stylizeTitle(){
+  const el = document.getElementById('mainTitle');
+  if(!el) return;
+  const raw = (el.textContent || '').replace(/\s+/g,' ').trim();
+  if(!raw) return;
+  const match = raw.match(/^(.*?)(\broadmap\b)(.*)$/i);
+  if(match){
+    const before = match[1].trimEnd();
+    const word = match[2];
+    const after = match[3];
+    el.innerHTML = `${before}${before ? ' ' : ''}<span class="roadmap-accent">${word}</span>${after}`;
+  } else {
+    el.textContent = raw;
+  }
+}
+
+function exportPDF(){
+  const monthEl = document.getElementById('monthFilter');
+  const selectedValue = monthEl ? monthEl.value : 'all';
+  const selectedText = monthEl ? monthEl.options[monthEl.selectedIndex]?.text || 'Todos os meses' : 'Todos os meses';
+  document.body.dataset.printScope = selectedText;
+  document.body.classList.add('printing');
+  document.body.classList.toggle('print-single-month', selectedValue !== 'all');
+  render();
+  stylizeTitle();
+  setTimeout(()=>{
+    window.print();
+    setTimeout(()=>{
+      document.body.classList.remove('printing','print-single-month');
+      delete document.body.dataset.printScope;
+      render();
+      stylizeTitle();
+    }, 250);
+  }, 220);
+}
+
+window.addEventListener('afterprint', () => {
+  document.body.classList.remove('printing','print-single-month');
+  delete document.body.dataset.printScope;
+  render();
+  stylizeTitle();
+});
+
 initMonthFilter();
+stylizeTitle();
 renderTabs();
 render();
 </script>
