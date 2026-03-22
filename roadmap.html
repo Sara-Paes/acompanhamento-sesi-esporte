@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
   --primary:#c81f45;
@@ -684,6 +685,61 @@ th{
   body.printing.print-single-month .roadmap-label{ border-top:1px solid var(--line) !important; }
 }
 
+
+.auth-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:0.45rem;
+  padding:0.55rem 0.9rem;
+  border-radius:999px;
+  border:1px solid var(--line);
+  background:var(--surface);
+  color:var(--muted);
+  font-weight:700;
+  font-size:0.8rem;
+  box-shadow:var(--shadow-soft);
+}
+
+.auth-badge.editing{
+  background:rgba(110,175,139,0.14);
+  color:#2f7a4c;
+  border-color:rgba(110,175,139,0.28);
+}
+
+.auth-badge.readonly{
+  background:rgba(111,151,198,0.12);
+  color:#355b84;
+  border-color:rgba(111,151,198,0.24);
+}
+
+.readonly-hint{
+  display:none;
+  max-width:1920px;
+  margin:0 auto;
+  width:100%;
+  padding:0.75rem 1.5rem;
+  background:#fff8e8;
+  color:#8a5a12;
+  border-bottom:1px solid #f1dfb6;
+  font-weight:600;
+}
+
+.readonly-hint.show{display:block}
+
+.is-readonly .toolbar-compact .btn-compact,
+.is-readonly .toolbar-compact .dropdown,
+.is-readonly .toolbar-compact input,
+.is-readonly .toolbar-compact select{
+  opacity:0.72;
+}
+
+.is-readonly .toolbar-compact .btn-compact:not(.secondary),
+.is-readonly .toolbar-compact input,
+.is-readonly .toolbar-compact select,
+.is-readonly .dropdown-content button{
+  pointer-events:none;
+}
+
 @media (max-width:1100px){
   .header-content{flex-direction:column;}
   .header-actions{align-self:flex-end;}
@@ -696,25 +752,28 @@ th{
   <div class="header-compact">
     <div class="header-content">
       <div class="header-left">
-        <h1 class="title" id="mainTitle" contenteditable onblur="stylizeTitle()">Sistema SESI Esporte | Roadmap</h1>
+        <h1 class="title" id="mainTitle" onblur="stylizeTitle()">Sistema SESI Esporte | Roadmap</h1>
         <div class="meta-editable">
           <div class="meta-item">
             <strong>Líderes:</strong>
-            <div class="meta-value" id="leaders" contenteditable>Bispo, Dayane e Sara</div>
+            <div class="meta-value" id="leaders">Bispo, Dayane e Sara</div>
           </div>
           <div class="meta-item">
             <strong>Período:</strong>
-            <div class="meta-value" id="period" contenteditable>01/03/2026 - 31/12/2028</div>
+            <div class="meta-value" id="period">01/03/2026 - 31/12/2028</div>
           </div>
           <a href="https://sara-paes.github.io/acompanhamento-sesi-esporte/" target="_blank" class="meta-link">↗ Acompanhamento</a>
         </div>
       </div>
       <div class="header-actions">
+        <div class="auth-badge readonly" id="authBadge">🔒 Visualização pública</div>
         <button class="btn-compact secondary" onclick="togglePresentation()">👁️ Apresentar</button>
         <button class="btn-compact" onclick="exportPDF()">📥 Exportar PDF</button>
       </div>
     </div>
   </div>
+
+  <div class="readonly-hint" id="readonlyHint">Visualização pública ativa. Para editar o roadmap, entre com um usuário autenticado do projeto.</div>
 
   <div class="toolbar-compact">
     <div class="toolbar-group-compact">
@@ -786,6 +845,25 @@ th{
 </div>
 
 <script>
+const SUPABASE_URL = 'https://wgbdbazajqswszhzzodt.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_u3dOv62_ppsPRrIk4U-plA_ENwWtk_4';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const ROADMAP_DEFAULT_TABS = [
+  {name:'Piloto', rows:[
+    {type:'group', name:'PREPARAÇÃO'},
+    {type:'task', name:'Apresentação Inicial'},
+    {type:'task', name:'Plano piloto'},
+    {type:'group', name:'EXECUÇÃO'},
+    {type:'task', name:'Definir unidades'},
+    {type:'task', name:'Contatar gerentes'}
+  ]},
+  {name:'Onda 2', rows:[
+    {type:'group', name:'PREPARAÇÃO'},
+    {type:'task', name:'Apresentação'}
+  ]}
+];
+
 const monthNamesPt = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 const monthNamesFullPt = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const monthClasses = ['m1','m2','m3','m4'];
@@ -796,6 +874,8 @@ let activeTab = 0;
 let isMouseDown = false;
 let selected = [];
 let selectedRowIndex = null;
+let canEdit = false;
+let isLoadingRoadmap = false;
 
 function buildDates(){
   const dates = [];
@@ -818,20 +898,11 @@ function buildDates(){
 
 const allDates = buildDates();
 
-let tabs = [
-  {name:'Piloto', cells:{}, rows:[
-    {type:'group', name:'PREPARAÇÃO'},
-    {type:'task', name:'Apresentação Inicial'},
-    {type:'task', name:'Plano piloto'},
-    {type:'group', name:'EXECUÇÃO'},
-    {type:'task', name:'Definir unidades'},
-    {type:'task', name:'Contatar gerentes'}
-  ]},
-  {name:'Onda 2', cells:{}, rows:[
-    {type:'group', name:'PREPARAÇÃO'},
-    {type:'task', name:'Apresentação'}
-  ]}
-];
+let tabs = ROADMAP_DEFAULT_TABS.map(tab => ({
+  name: tab.name,
+  cells: {},
+  rows: tab.rows.map(row => ({...row}))
+}));
 
 function visibleDates(){
   const filter = document.getElementById('monthFilter')?.value || 'all';
@@ -899,7 +970,7 @@ function render(){
   rows.forEach((row,rowIndex)=>{
     const leftClass = row.type==='group' ? 'left group' : 'left';
     const selectedRowClass = selectedRowIndex===rowIndex ? " class='selected-row-active'" : '';
-    html += `<tr ${selectedRowClass}><td class='${leftClass}' contenteditable='${!isPresentation()}' onclick='selectRow(${rowIndex})' onblur='updateRowName(${rowIndex}, this.innerText)'>${row.name}</td>`;
+    html += `<tr ${selectedRowClass}><td class='${leftClass}' contenteditable='${!isPresentation() && canEdit}' onclick='selectRow(${rowIndex})' onblur='updateRowName(${rowIndex}, this.innerText)'>${row.name}</td>`;
     if(row.type==='group'){
       dates.forEach(() => html += `<td class='cell group-row'></td>`);
     } else {
@@ -931,124 +1002,502 @@ function render(){
   document.getElementById('table').innerHTML = html;
 }
 
-function isPresentation(){ return document.getElementById('app').classList.contains('presentation'); }
-function togglePresentation(){ document.getElementById('app').classList.toggle('presentation'); selected=[]; render(); }
 function switchTab(i){ activeTab=i; selected=[]; selectedRowIndex=null; renderTabs(); render(); }
-function selectRow(i){ if(isPresentation()) return; selectedRowIndex=i; render(); }
-function updateRowName(i, val){ if(!isPresentation()) tabs[activeTab].rows[i].name = val.trim() || 'Sem nome'; }
+function selectRow(i){ if(isPresentation() || !canEdit) return; selectedRowIndex=i; render(); }
+
+function setEditingState(){
+  const app = document.getElementById('app');
+  const authBadge = document.getElementById('authBadge');
+  const readonlyHint = document.getElementById('readonlyHint');
+  const editable = canEdit && !isPresentation();
+
+  app.classList.toggle('is-readonly', !canEdit);
+  if(authBadge){
+    authBadge.className = `auth-badge ${canEdit ? 'editing' : 'readonly'}`;
+    authBadge.textContent = canEdit ? '✏️ Edição liberada' : '🔒 Visualização pública';
+  }
+  if(readonlyHint){
+    readonlyHint.classList.toggle('show', !canEdit && !isPresentation());
+  }
+
+  ['mainTitle','leaders','period'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.contentEditable = editable ? 'true' : 'false';
+  });
+}
+
+function isPresentation(){ return document.getElementById('app').classList.contains('presentation'); }
+function togglePresentation(){ document.getElementById('app').classList.toggle('presentation'); selected=[]; setEditingState(); render(); }
+
+function getTaskRows(tab){
+  return tab.rows.filter(r => r.type !== 'group');
+}
+
+function getRowByTaskIndex(tab, taskIdx){
+  const taskRows = getTaskRows(tab);
+  return taskRows[Number(taskIdx)] || null;
+}
+
+async function checkAuthRoadmap(){
+  const { data, error } = await supabaseClient.auth.getSession();
+  if(error){
+    console.error('Erro ao verificar sessão do roadmap:', error);
+    canEdit = false;
+  } else {
+    canEdit = !!data.session;
+  }
+  setEditingState();
+  return canEdit;
+}
+
+async function ensureSeedData(){
+  if(!canEdit) return false;
+  const { count, error } = await supabaseClient
+    .from('roadmap_tabs')
+    .select('*', { count: 'exact', head: true });
+
+  if(error){
+    console.error('Erro ao verificar seed do roadmap:', error);
+    return false;
+  }
+
+  if((count || 0) > 0) return true;
+
+  for(let tabIndex = 0; tabIndex < ROADMAP_DEFAULT_TABS.length; tabIndex++){
+    const tab = ROADMAP_DEFAULT_TABS[tabIndex];
+    const { data: insertedTab, error: tabError } = await supabaseClient
+      .from('roadmap_tabs')
+      .insert([{ name: tab.name, ordem: tabIndex + 1, ativo: true }])
+      .select()
+      .single();
+
+    if(tabError){
+      console.error('Erro ao criar aba inicial:', tabError);
+      return false;
+    }
+
+    const rowPayload = tab.rows.map((row, rowIndex) => ({
+      tab_id: insertedTab.id,
+      nome: row.name,
+      tipo: row.type,
+      ordem: rowIndex + 1
+    }));
+
+    const { error: rowsError } = await supabaseClient
+      .from('roadmap_rows')
+      .insert(rowPayload);
+
+    if(rowsError){
+      console.error('Erro ao criar linhas iniciais:', rowsError);
+      return false;
+    }
+  }
+  return true;
+}
+
+async function loadRoadmapFromSupabase(){
+  isLoadingRoadmap = true;
+  try {
+    await ensureSeedData();
+
+    const { data: tabsData, error: tabsError } = await supabaseClient
+      .from('roadmap_tabs')
+      .select('*')
+      .eq('ativo', true)
+      .order('ordem', { ascending: true })
+      .order('id', { ascending: true });
+
+    if(tabsError) throw tabsError;
+
+    const { data: rowsData, error: rowsError } = await supabaseClient
+      .from('roadmap_rows')
+      .select('*')
+      .order('tab_id', { ascending: true })
+      .order('ordem', { ascending: true })
+      .order('id', { ascending: true });
+
+    if(rowsError) throw rowsError;
+
+    const { data: cellsData, error: cellsError } = await supabaseClient
+      .from('roadmap_cells')
+      .select('*');
+
+    if(cellsError) throw cellsError;
+
+    tabs = (tabsData || []).map(tab => {
+      const tabRows = (rowsData || [])
+        .filter(r => Number(r.tab_id) === Number(tab.id))
+        .map(r => ({
+          id: r.id,
+          type: r.tipo || r.type,
+          name: r.nome || r.name || 'Sem nome',
+          ordem: r.ordem || 0
+        }));
+
+      const taskRows = tabRows.filter(r => r.type !== 'group');
+      const taskIndexByRowId = new Map(taskRows.map((row, index) => [Number(row.id), index]));
+      const cells = {};
+
+      (cellsData || [])
+        .filter(c => Number(c.tab_id) === Number(tab.id))
+        .forEach(c => {
+          const taskIndex = taskIndexByRowId.get(Number(c.row_id));
+          if(taskIndex === undefined) return;
+          const key = `${taskIndex}-${c.data}`;
+          cells[key] = {
+            id: c.id,
+            type: c.tipo,
+            text: c.label || ''
+          };
+        });
+
+      return {
+        id: tab.id,
+        name: tab.name,
+        ordem: tab.ordem || 0,
+        cells,
+        rows: tabRows
+      };
+    });
+
+    if(!tabs.length){
+      tabs = ROADMAP_DEFAULT_TABS.map(tab => ({ name: tab.name, cells: {}, rows: tab.rows.map(row => ({...row})) }));
+    }
+
+    activeTab = Math.min(activeTab, Math.max(0, tabs.length - 1));
+    selected = [];
+    selectedRowIndex = null;
+    renderTabs();
+    render();
+  } catch (error) {
+    console.error('Erro ao carregar roadmap:', error);
+    alert('Não foi possível carregar o roadmap do Supabase.');
+  } finally {
+    isLoadingRoadmap = false;
+  }
+}
+
+async function resequenceRows(tab){
+  const updates = tab.rows
+    .filter(row => row.id)
+    .map((row, index) => supabaseClient.from('roadmap_rows').update({ ordem: index + 1 }).eq('id', row.id));
+  if(!updates.length) return;
+  const results = await Promise.all(updates);
+  const failed = results.find(r => r.error);
+  if(failed?.error) console.error('Erro ao reordenar linhas:', failed.error);
+}
+
+async function updateRowName(i, val){
+  if(isPresentation() || !canEdit) return;
+  const row = tabs[activeTab].rows[i];
+  const newName = val.trim() || 'Sem nome';
+  row.name = newName;
+  if(!row.id) return;
+
+  const { error } = await supabaseClient
+    .from('roadmap_rows')
+    .update({ nome: newName })
+    .eq('id', row.id);
+
+  if(error){
+    console.error('Erro ao atualizar linha:', error);
+    alert('Erro ao atualizar nome da linha.');
+  }
+}
 
 function startSelect(k){
-  if(isPresentation()) return;
+  if(isPresentation() || !canEdit) return;
   selected = [k];
   isMouseDown = true;
   applyPaint(k);
   render();
 }
 function dragSelect(k){
-  if(isPresentation() || !isMouseDown) return;
+  if(isPresentation() || !isMouseDown || !canEdit) return;
   if(!selected.includes(k)) selected.push(k);
   applyPaint(k);
   render();
 }
 window.onmouseup = ()=> isMouseDown = false;
 
-function applyPaint(k){
+async function applyPaint(k){
+  if(!canEdit || isLoadingRoadmap) return;
   const mode = document.getElementById('mode').value;
   const tab = tabs[activeTab];
-  if(mode==='clear') delete tab.cells[k];
-  else tab.cells[k] = {...(tab.cells[k]||{}), type:mode};
+  const [taskIdx, iso] = k.split('-');
+  const row = getRowByTaskIndex(tab, taskIdx);
+  if(!row?.id) return;
+
+  if(mode === 'clear'){
+    delete tab.cells[k];
+    const { error } = await supabaseClient
+      .from('roadmap_cells')
+      .delete()
+      .eq('tab_id', tab.id)
+      .eq('row_id', row.id)
+      .eq('data', iso);
+    if(error){
+      console.error('Erro ao limpar célula:', error);
+      alert('Erro ao limpar célula.');
+    }
+    return;
+  }
+
+  tab.cells[k] = { ...(tab.cells[k] || {}), type: mode };
+  const payload = {
+    tab_id: tab.id,
+    row_id: row.id,
+    data: iso,
+    tipo: mode,
+    label: tab.cells[k]?.text || null
+  };
+
+  const { data, error } = await supabaseClient
+    .from('roadmap_cells')
+    .upsert(payload, { onConflict: 'tab_id,row_id,data' })
+    .select()
+    .single();
+
+  if(error){
+    console.error('Erro ao salvar célula:', error);
+    alert('Erro ao salvar célula.');
+    return;
+  }
+  if(data) tab.cells[k].id = data.id;
 }
 
-function applyText(){
+async function applyText(){
+  if(!canEdit || isLoadingRoadmap) return;
   const txt = document.getElementById('text').value;
+  const mode = document.getElementById('mode').value;
   const tab = tabs[activeTab];
-  selected.forEach(k=>{
-    if(!tab.cells[k]) tab.cells[k] = {type:document.getElementById('mode').value};
+
+  for (const k of selected) {
+    const [taskIdx, iso] = k.split('-');
+    const row = getRowByTaskIndex(tab, taskIdx);
+    if(!row?.id) continue;
+
+    if(!tab.cells[k]) tab.cells[k] = { type: mode };
     tab.cells[k].text = txt;
-  });
+    if(!tab.cells[k].type) tab.cells[k].type = mode;
+
+    const payload = {
+      tab_id: tab.id,
+      row_id: row.id,
+      data: iso,
+      tipo: tab.cells[k].type || mode,
+      label: txt || null
+    };
+
+    const { data, error } = await supabaseClient
+      .from('roadmap_cells')
+      .upsert(payload, { onConflict: 'tab_id,row_id,data' })
+      .select()
+      .single();
+
+    if(error){
+      console.error('Erro ao salvar texto:', error);
+      alert('Erro ao salvar texto em uma célula.');
+      return;
+    }
+    if(data) tab.cells[k].id = data.id;
+  }
+
   render();
 }
 
-function addTask(){
+async function addTask(){
+  if(!canEdit) return;
   const name = prompt('Nome da atividade');
   if(!name) return;
-  const rows = tabs[activeTab].rows;
+
+  const tab = tabs[activeTab];
+  const rows = tab.rows;
   const insertAt = selectedRowIndex !== null ? selectedRowIndex + 1 : rows.length;
-  rows.splice(insertAt, 0, {type:'task', name});
+  const { data, error } = await supabaseClient
+    .from('roadmap_rows')
+    .insert([{ tab_id: tab.id, nome: name, tipo: 'task', ordem: insertAt + 1 }])
+    .select()
+    .single();
+
+  if(error){
+    console.error(error);
+    alert('Erro ao criar atividade.');
+    return;
+  }
+
+  rows.splice(insertAt, 0, { id: data.id, type: 'task', name: data.nome || name });
   selectedRowIndex = insertAt;
+  await resequenceRows(tab);
   render();
-}
-function addGroup(){
-  const name = prompt('Nome do grupo');
-  if(!name) return;
-  const rows = tabs[activeTab].rows;
-  const insertAt = selectedRowIndex !== null ? selectedRowIndex + 1 : rows.length;
-  rows.splice(insertAt, 0, {type:'group', name});
-  selectedRowIndex = insertAt;
-  render();
-}
-function addTab(){
-  const name = prompt('Nome da aba');
-  if(name) { tabs.push({name, cells:{}, rows:[]}); activeTab = tabs.length-1; renderTabs(); render(); }
-}
-function renameTab(){
-  const name = prompt('Novo nome', tabs[activeTab].name);
-  if(name) { tabs[activeTab].name = name; renderTabs(); }
-}
-function deleteTab(){
-  if(tabs.length > 1 && confirm('Excluir aba?')) { tabs.splice(activeTab,1); activeTab=0; renderTabs(); render(); }
 }
 
-function editSelectedRow(){
+async function addGroup(){
+  if(!canEdit) return;
+  const name = prompt('Nome do grupo');
+  if(!name) return;
+
+  const tab = tabs[activeTab];
+  const rows = tab.rows;
+  const insertAt = selectedRowIndex !== null ? selectedRowIndex + 1 : rows.length;
+  const { data, error } = await supabaseClient
+    .from('roadmap_rows')
+    .insert([{ tab_id: tab.id, nome: name, tipo: 'group', ordem: insertAt + 1 }])
+    .select()
+    .single();
+
+  if(error){
+    console.error(error);
+    alert('Erro ao criar grupo.');
+    return;
+  }
+
+  rows.splice(insertAt, 0, { id: data.id, type: 'group', name: data.nome || name });
+  selectedRowIndex = insertAt;
+  await resequenceRows(tab);
+  render();
+}
+
+async function addTab(){
+  if(!canEdit) return;
+  const name = prompt('Nome da aba');
+  if(!name) return;
+
+  const { data, error } = await supabaseClient
+    .from('roadmap_tabs')
+    .insert([{ name, ordem: tabs.length + 1, ativo: true }])
+    .select()
+    .single();
+
+  if(error){
+    console.error(error);
+    alert('Erro ao criar aba.');
+    return;
+  }
+
+  tabs.push({ id: data.id, name: data.name || name, cells: {}, rows: [] });
+  activeTab = tabs.length - 1;
+  renderTabs();
+  render();
+}
+
+async function renameTab(){
+  if(!canEdit) return;
+  const tab = tabs[activeTab];
+  const name = prompt('Novo nome', tab.name);
+  if(!name) return;
+  tab.name = name;
+
+  if(tab.id){
+    const { error } = await supabaseClient.from('roadmap_tabs').update({ name }).eq('id', tab.id);
+    if(error){
+      console.error(error);
+      alert('Erro ao renomear aba.');
+      return;
+    }
+  }
+  renderTabs();
+}
+
+async function deleteTab(){
+  if(!canEdit) return;
+  if(tabs.length <= 1) return alert('É necessário manter ao menos uma aba.');
+  const tab = tabs[activeTab];
+  if(!confirm(`Excluir aba "${tab.name}"?`)) return;
+
+  if(tab.id){
+    const { error } = await supabaseClient.from('roadmap_tabs').delete().eq('id', tab.id);
+    if(error){
+      console.error(error);
+      alert('Erro ao excluir aba.');
+      return;
+    }
+  }
+  tabs.splice(activeTab,1);
+  activeTab = Math.max(0, activeTab - 1);
+  renderTabs();
+  render();
+}
+
+async function editSelectedRow(){
+  if(!canEdit) return;
   if(selectedRowIndex===null) return alert('Selecione uma linha');
   const row = tabs[activeTab].rows[selectedRowIndex];
   if(row.type === 'group') return alert('Esta é uma linha de grupo. Use os botões de Grupo para editá-la.');
   const name = prompt('Editar nome da atividade', row.name);
-  if(name) { row.name = name; render(); }
-}
-function deleteSelectedRow(){
-  if(selectedRowIndex===null) return alert('Selecione uma linha');
-  const row = tabs[activeTab].rows[selectedRowIndex];
-  if(row.type === 'group') return alert('Esta é uma linha de grupo. Use os botões de Grupo para excluí-la.');
-  if(confirm('Excluir atividade selecionada?')){
-    tabs[activeTab].rows.splice(selectedRowIndex,1);
-    selectedRowIndex=null;
-    render();
-  }
+  if(!name) return;
+  row.name = name;
+  render();
+  await updateRowName(selectedRowIndex, name);
 }
 
-function editGroup(){
+async function deleteSelectedRow(){
+  if(!canEdit) return;
+  if(selectedRowIndex===null) return alert('Selecione uma linha');
+  const tab = tabs[activeTab];
+  const row = tab.rows[selectedRowIndex];
+  if(row.type === 'group') return alert('Esta é uma linha de grupo. Use os botões de Grupo para excluí-la.');
+  if(!confirm('Excluir atividade selecionada?')) return;
+
+  if(row.id){
+    const { error } = await supabaseClient.from('roadmap_rows').delete().eq('id', row.id);
+    if(error){
+      console.error(error);
+      alert('Erro ao excluir atividade.');
+      return;
+    }
+  }
+
+  tab.rows.splice(selectedRowIndex,1);
+  selectedRowIndex=null;
+  await resequenceRows(tab);
+  render();
+}
+
+async function editGroup(){
+  if(!canEdit) return;
   if(selectedRowIndex===null) return alert('Selecione um grupo');
   const row = tabs[activeTab].rows[selectedRowIndex];
   if(row.type !== 'group') return alert('A linha selecionada não é um grupo.');
   const name = prompt('Editar nome do grupo', row.name);
-  if(name) { row.name = name; render(); }
-}
-function deleteGroup(){
-  if(selectedRowIndex===null) return alert('Selecione um grupo');
-  const row = tabs[activeTab].rows[selectedRowIndex];
-  if(row.type !== 'group') return alert('A linha selecionada não é um grupo.');
-  if(confirm('Excluir o grupo "' + row.name + '"?')){
-    tabs[activeTab].rows.splice(selectedRowIndex,1);
-    selectedRowIndex=null;
-    render();
-  }
+  if(!name) return;
+  row.name = name;
+  render();
+  await updateRowName(selectedRowIndex, name);
 }
 
-function stylizeTitle(){
-  const el = document.getElementById('mainTitle');
-  if(!el) return;
-  const raw = (el.textContent || '').replace(/\s+/g,' ').trim();
-  if(!raw) return;
-  const match = raw.match(/^(.*?)(\broadmap\b)(.*)$/i);
-  if(match){
-    const before = match[1].trimEnd();
-    const word = match[2];
-    const after = match[3];
-    el.innerHTML = `${before}${before ? ' ' : ''}<span class="roadmap-accent">${word}</span>${after}`;
-  } else {
-    el.textContent = raw;
+async function deleteGroup(){
+  if(!canEdit) return;
+  if(selectedRowIndex===null) return alert('Selecione um grupo');
+  const tab = tabs[activeTab];
+  const row = tab.rows[selectedRowIndex];
+  if(row.type !== 'group') return alert('A linha selecionada não é um grupo.');
+  if(!confirm('Excluir o grupo "' + row.name + '"?')) return;
+
+  if(row.id){
+    const { error } = await supabaseClient.from('roadmap_rows').delete().eq('id', row.id);
+    if(error){
+      console.error(error);
+      alert('Erro ao excluir grupo.');
+      return;
+    }
   }
+
+  tab.rows.splice(selectedRowIndex,1);
+  selectedRowIndex=null;
+  await resequenceRows(tab);
+  render();
+}
+
+async function initRoadmap(){
+  await checkAuthRoadmap();
+  renderTabs();
+  render();
+  await loadRoadmapFromSupabase();
+  supabaseClient.auth.onAuthStateChange(async () => {
+    await checkAuthRoadmap();
+    await loadRoadmapFromSupabase();
+  });
 }
 
 function exportPDF(){
@@ -1080,8 +1529,7 @@ window.addEventListener('afterprint', () => {
 
 initMonthFilter();
 stylizeTitle();
-renderTabs();
-render();
+initRoadmap();
 </script>
 </body>
 </html>
