@@ -7,7 +7,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
   --primary:#c81f45;
@@ -685,65 +684,19 @@ th{
   body.printing.print-single-month .roadmap-label{ border-top:1px solid var(--line) !important; }
 }
 
-
-.auth-badge{
-  display:inline-flex;
-  align-items:center;
-  gap:0.45rem;
-  padding:0.55rem 0.9rem;
-  border-radius:999px;
-  border:1px solid var(--line);
-  background:var(--surface);
-  color:var(--muted);
-  font-weight:700;
-  font-size:0.8rem;
-  box-shadow:var(--shadow-soft);
-}
-
-.auth-badge.editing{
-  background:rgba(110,175,139,0.14);
-  color:#2f7a4c;
-  border-color:rgba(110,175,139,0.28);
-}
-
-.auth-badge.readonly{
-  background:rgba(111,151,198,0.12);
-  color:#355b84;
-  border-color:rgba(111,151,198,0.24);
-}
-
-.readonly-hint{
-  display:none;
-  max-width:1920px;
-  margin:0 auto;
-  width:100%;
-  padding:0.75rem 1.5rem;
-  background:#fff8e8;
-  color:#8a5a12;
-  border-bottom:1px solid #f1dfb6;
-  font-weight:600;
-}
-
-.readonly-hint.show{display:block}
-
-.is-readonly .toolbar-compact .btn-compact,
-.is-readonly .toolbar-compact .dropdown,
-.is-readonly .toolbar-compact input,
-.is-readonly .toolbar-compact select{
-  opacity:0.72;
-}
-
-.is-readonly .toolbar-compact .btn-compact:not(.secondary),
-.is-readonly .toolbar-compact input,
-.is-readonly .toolbar-compact select,
-.is-readonly .dropdown-content button{
-  pointer-events:none;
-}
-
 @media (max-width:1100px){
   .header-content{flex-direction:column;}
   .header-actions{align-self:flex-end;}
 }
+
+
+.auth-badge{display:inline-flex;align-items:center;gap:.45rem;padding:.45rem .8rem;border-radius:999px;font-size:.78rem;font-weight:800;border:1px solid var(--line);background:#fff;color:var(--muted);box-shadow:var(--shadow-soft);}
+.auth-badge.edit{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;border-color:transparent;}
+.auth-badge.view{background:#fff7f8;color:var(--primary);border-color:rgba(200,31,69,.14);}
+.readonly .edit-control,.readonly [contenteditable="true"]{pointer-events:none!important;}
+.readonly .edit-control{opacity:.55;filter:saturate(.7);}
+.meta-link-row{display:inline-flex;align-items:center;gap:.45rem;}
+.meta-link-edit{padding:.45rem .7rem;font-size:.78rem;}
 
 </style>
 </head>
@@ -752,33 +705,31 @@ th{
   <div class="header-compact">
     <div class="header-content">
       <div class="header-left">
-        <h1 class="title" id="mainTitle" onblur="stylizeTitle()">Sistema SESI Esporte | Roadmap</h1>
+        <h1 class="title" id="mainTitle" contenteditable="false" onblur="handleMetaBlur('titulo')">Sistema SESI Esporte | Roadmap</h1>
         <div class="meta-editable">
           <div class="meta-item">
             <strong>Líderes:</strong>
-            <div class="meta-value" id="leaders">Bispo, Dayane e Sara</div>
+            <div class="meta-value" id="leaders" contenteditable="false" onblur="handleMetaBlur('lideres')">Bispo, Dayane e Sara</div>
           </div>
           <div class="meta-item">
             <strong>Período:</strong>
-            <div class="meta-value" id="period">01/03/2026 - 31/12/2028</div>
+            <div class="meta-value" id="period" contenteditable="false" onblur="handleMetaBlur('periodo')">01/03/2026 - 31/12/2028</div>
           </div>
-          <a href="https://sara-paes.github.io/acompanhamento-sesi-esporte/" target="_blank" class="meta-link">↗ Acompanhamento</a>
+          <span class="meta-link-row"><a href="#" target="_blank" class="meta-link" id="metaLink">↗ Acompanhamento</a><button class="btn-compact secondary edit-control meta-link-edit" id="editLinkBtn" onclick="editMetaLink()">✏️ Link</button></span>
         </div>
       </div>
       <div class="header-actions">
-        <div class="auth-badge readonly" id="authBadge">🔒 Visualização pública</div>
+        <div id="authBadge" class="auth-badge view">Visualização pública</div>
         <button class="btn-compact secondary" onclick="togglePresentation()">👁️ Apresentar</button>
         <button class="btn-compact" onclick="exportPDF()">📥 Exportar PDF</button>
       </div>
     </div>
   </div>
 
-  <div class="readonly-hint" id="readonlyHint">Visualização pública ativa. Para editar o roadmap, entre com um usuário autenticado do projeto.</div>
-
   <div class="toolbar-compact">
     <div class="toolbar-group-compact">
       <span class="toolbar-label">Tipo</span>
-      <select id="mode">
+      <select id="mode" class="edit-control">
         <option value="sede">SEDE</option>
         <option value="unidades">UNIDADES</option>
         <option value="tec">TECSPORT</option>
@@ -789,14 +740,14 @@ th{
     </div>
     <div class="toolbar-group-compact">
       <span class="toolbar-label">Texto</span>
-      <input id="text" placeholder="Descrição" style="width:150px">
+      <input id="text" class="edit-control" placeholder="Descrição" style="width:150px">
     </div>
-    <button class="btn-compact" onclick="applyText()">✓ Aplicar</button>
+    <button class="btn-compact edit-control" id="applyTextBtn" onclick="applyText()">✓ Aplicar</button>
     <div class="toolbar-group-compact">
       <span class="toolbar-label">Mês</span>
       <select id="monthFilter" onchange="render()" style="width:140px"></select>
     </div>
-    <div class="dropdown">
+    <div class="dropdown edit-control">
       <button class="btn-compact secondary">▼ Linha</button>
       <div class="dropdown-content">
         <button onclick="addTask()">+ Adicionar</button>
@@ -804,7 +755,7 @@ th{
         <button onclick="deleteSelectedRow()">🗑️ Excluir</button>
       </div>
     </div>
-    <div class="dropdown">
+    <div class="dropdown edit-control">
       <button class="btn-compact secondary">▼ Aba</button>
       <div class="dropdown-content">
         <button onclick="addTab()">+ Adicionar</button>
@@ -812,7 +763,7 @@ th{
         <button onclick="deleteTab()">🗑️ Excluir</button>
       </div>
     </div>
-    <div class="dropdown">
+    <div class="dropdown edit-control">
       <button class="btn-compact secondary">▼ Grupo</button>
       <div class="dropdown-content">
         <button onclick="addGroup()">+ Adicionar</button>
@@ -845,24 +796,9 @@ th{
 </div>
 
 <script>
-const SUPABASE_URL = 'https://wgbdbazajqswszhzzodt.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_u3dOv62_ppsPRrIk4U-plA_ENwWtk_4';
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-const ROADMAP_DEFAULT_TABS = [
-  {name:'Piloto', rows:[
-    {type:'group', name:'PREPARAÇÃO'},
-    {type:'task', name:'Apresentação Inicial'},
-    {type:'task', name:'Plano piloto'},
-    {type:'group', name:'EXECUÇÃO'},
-    {type:'task', name:'Definir unidades'},
-    {type:'task', name:'Contatar gerentes'}
-  ]},
-  {name:'Onda 2', rows:[
-    {type:'group', name:'PREPARAÇÃO'},
-    {type:'task', name:'Apresentação'}
-  ]}
-];
+const PROJECT_URL = "https://wgbdbazajqswszhzzodt.supabase.co";
+const ANON_KEY = "sb_publishable_u3dOv62_ppsPRrIk4U-plA_ENwWtk_4";
+const supabaseClient = window.supabase.createClient(PROJECT_URL, ANON_KEY);
 
 const monthNamesPt = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 const monthNamesFullPt = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
@@ -870,12 +806,14 @@ const monthClasses = ['m1','m2','m3','m4'];
 const weekdaysPt = ['dom','seg','ter','qua','qui','sex','sáb'];
 const START = new Date('2026-01-01T00:00:00');
 const END = new Date('2028-12-31T00:00:00');
+
 let activeTab = 0;
 let isMouseDown = false;
 let selected = [];
 let selectedRowIndex = null;
+let tabs = [];
+let metaRecord = null;
 let canEdit = false;
-let isLoadingRoadmap = false;
 
 function buildDates(){
   const dates = [];
@@ -895,14 +833,7 @@ function buildDates(){
   }
   return dates;
 }
-
 const allDates = buildDates();
-
-let tabs = ROADMAP_DEFAULT_TABS.map(tab => ({
-  name: tab.name,
-  cells: {},
-  rows: tab.rows.map(row => ({...row}))
-}));
 
 function visibleDates(){
   const filter = document.getElementById('monthFilter')?.value || 'all';
@@ -922,17 +853,69 @@ function initMonthFilter(){
   el.innerHTML = html;
 }
 
+function stylizeTitle(){
+  const el = document.getElementById('mainTitle');
+  if(!el) return;
+  const raw = (el.textContent || '').replace(/\s+/g,' ').trim();
+  if(!raw) return;
+  const match = raw.match(/^(.*?)(roadmap)(.*)$/i);
+  if(match){
+    const before = match[1].trimEnd();
+    const word = match[2];
+    const after = match[3];
+    el.innerHTML = `${before}${before ? ' ' : ''}<span class="roadmap-accent">${word}</span>${after}`;
+  } else {
+    el.textContent = raw;
+  }
+}
+
+function isPresentation(){ return document.getElementById('app').classList.contains('presentation'); }
+function togglePresentation(){ document.getElementById('app').classList.toggle('presentation'); selected=[]; render(); }
+function switchTab(i){ activeTab=i; selected=[]; selectedRowIndex=null; renderTabs(); render(); }
+function selectRow(i){ if(isPresentation() || !canEdit) return; selectedRowIndex=i; render(); }
+
+function updateAuthUI(){
+  document.body.classList.toggle('readonly', !canEdit);
+  const badge = document.getElementById('authBadge');
+  badge.className = `auth-badge ${canEdit ? 'edit' : 'view'}`;
+  badge.textContent = canEdit ? 'Edição liberada' : 'Visualização pública';
+
+  document.querySelectorAll('.edit-control').forEach(el => {
+    if (el.matches('input, select, button')) el.disabled = !canEdit;
+    if (el.classList.contains('dropdown')) {
+      el.style.pointerEvents = canEdit ? 'auto' : 'none';
+      el.style.opacity = canEdit ? '1' : '.55';
+    }
+  });
+
+  document.getElementById('mainTitle').setAttribute('contenteditable', canEdit ? 'true' : 'false');
+  document.getElementById('leaders').setAttribute('contenteditable', canEdit ? 'true' : 'false');
+  document.getElementById('period').setAttribute('contenteditable', canEdit ? 'true' : 'false');
+}
+
+function normalizeCellMap(value){
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return value;
+}
+
+function getCurrentTab(){ return tabs[activeTab] || { rows: [] }; }
+function getCurrentRowByIndex(i){ return getCurrentTab().rows[i] || null; }
+
+function escapeHtml(str){
+  return String(str ?? '').replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+}
+
 function renderTabs(){
   const el = document.getElementById('tabs');
-  el.innerHTML = tabs.map((t,i)=>`<div class='tab-compact ${i===activeTab?'active':''}' onclick='switchTab(${i})'>${t.name}</div>`).join('');
+  el.innerHTML = tabs.map((t,i)=>`<div class='tab-compact ${i===activeTab?'active':''}' onclick='switchTab(${i})'>${escapeHtml(t.name || t.nome || `Aba ${i+1}`)}</div>`).join('');
 }
 
 function render(){
-  const tab = tabs[activeTab];
+  const tab = getCurrentTab();
   const dates = visibleDates();
   let html = '';
 
-  html += "<tr><th class='roadmap-label'><span class=\'roadmap-pill\'>ROADMAP</span></th>";
+  html += "<tr><th class='roadmap-label'><span class='roadmap-pill'>ROADMAP</span></th>";
   dates.forEach((d, i) => {
     const cls = monthClasses[d.monthIndex % monthClasses.length];
     const showMonth = i === 0 || dates[i-1].month !== d.month;
@@ -965,34 +948,32 @@ function render(){
   });
   html += "</tr>";
 
-  const rows = tab.rows;
-  let taskCounter = -1;
-  rows.forEach((row,rowIndex)=>{
-    const leftClass = row.type==='group' ? 'left group' : 'left';
+  (tab.rows || []).forEach((row,rowIndex)=>{
+    const rowType = row.type || row.tipo_linha;
+    const leftClass = rowType==='group' ? 'left group' : 'left';
     const selectedRowClass = selectedRowIndex===rowIndex ? " class='selected-row-active'" : '';
-    html += `<tr ${selectedRowClass}><td class='${leftClass}' contenteditable='${!isPresentation() && canEdit}' onclick='selectRow(${rowIndex})' onblur='updateRowName(${rowIndex}, this.innerText)'>${row.name}</td>`;
-    if(row.type==='group'){
+    html += `<tr ${selectedRowClass}><td class='${leftClass}' contenteditable='${!isPresentation() && canEdit}' onclick='selectRow(${rowIndex})' onblur='updateRowName(${rowIndex}, this.innerText)'>${escapeHtml(row.name || row.nome || '')}</td>`;
+    if(rowType==='group'){
       dates.forEach(() => html += `<td class='cell group-row'></td>`);
     } else {
-      taskCounter++;
-      const currentTaskIdx = taskCounter;
+      const cellMap = normalizeCellMap(row.cellMap || row.cell_map);
       dates.forEach((d, dIdx) => {
-        const k = currentTaskIdx+'-'+d.iso;
-        const cell = tab.cells[k];
+        const k = rowIndex + '|' + d.iso;
+        const cell = cellMap[d.iso];
         const sel = selected.includes(k)?'selected-cell-active':'';
         let barHtml = '';
         if(cell){
           const prevDate = dIdx > 0 ? dates[dIdx-1].iso : null;
           const nextDate = dIdx < dates.length - 1 ? dates[dIdx+1].iso : null;
-          const prevCell = prevDate ? tab.cells[currentTaskIdx+'-'+prevDate] : null;
-          const nextCell = nextDate ? tab.cells[currentTaskIdx+'-'+nextDate] : null;
+          const prevCell = prevDate ? cellMap[prevDate] : null;
+          const nextCell = nextDate ? cellMap[nextDate] : null;
           const isStart = !prevCell || prevCell.type !== cell.type;
           const isEnd = !nextCell || nextCell.type !== cell.type;
           let barClass = 'single';
           if(!isStart && !isEnd) barClass = 'middle';
           else if(isStart && !isEnd) barClass = 'start';
           else if(!isStart && isEnd) barClass = 'end';
-          barHtml = `<div class="bar ${cell.type} ${barClass}">${isStart ? (cell.text||'') : ''}</div>`;
+          barHtml = `<div class="bar ${cell.type} ${barClass}">${isStart ? escapeHtml(cell.text||'') : ''}</div>`;
         }
         html += `<td class='cell ${sel}' data-key='${k}' onmousedown='startSelect("${k}")' onmouseenter='dragSelect("${k}")'>${barHtml}</td>`;
       });
@@ -1002,207 +983,141 @@ function render(){
   document.getElementById('table').innerHTML = html;
 }
 
-function switchTab(i){ activeTab=i; selected=[]; selectedRowIndex=null; renderTabs(); render(); }
-function selectRow(i){ if(isPresentation() || !canEdit) return; selectedRowIndex=i; render(); }
-
-function setEditingState(){
-  const app = document.getElementById('app');
-  const authBadge = document.getElementById('authBadge');
-  const readonlyHint = document.getElementById('readonlyHint');
-  const editable = canEdit && !isPresentation();
-
-  app.classList.toggle('is-readonly', !canEdit);
-  if(authBadge){
-    authBadge.className = `auth-badge ${canEdit ? 'editing' : 'readonly'}`;
-    authBadge.textContent = canEdit ? '✏️ Edição liberada' : '🔒 Visualização pública';
-  }
-  if(readonlyHint){
-    readonlyHint.classList.toggle('show', !canEdit && !isPresentation());
-  }
-
-  ['mainTitle','leaders','period'].forEach(id => {
-    const el = document.getElementById(id);
-    if(el) el.contentEditable = editable ? 'true' : 'false';
-  });
-}
-
-function isPresentation(){ return document.getElementById('app').classList.contains('presentation'); }
-function togglePresentation(){ document.getElementById('app').classList.toggle('presentation'); selected=[]; setEditingState(); render(); }
-
-function getTaskRows(tab){
-  return tab.rows.filter(r => r.type !== 'group');
-}
-
-function getRowByTaskIndex(tab, taskIdx){
-  const taskRows = getTaskRows(tab);
-  return taskRows[Number(taskIdx)] || null;
-}
-
-async function checkAuthRoadmap(){
-  const { data, error } = await supabaseClient.auth.getSession();
-  if(error){
-    console.error('Erro ao verificar sessão do roadmap:', error);
-    canEdit = false;
-  } else {
-    canEdit = !!data.session;
-  }
-  setEditingState();
-  return canEdit;
-}
-
-async function ensureSeedData(){
-  if(!canEdit) return false;
-  const { count, error } = await supabaseClient
-    .from('roadmap_tabs')
-    .select('*', { count: 'exact', head: true });
-
-  if(error){
-    console.error('Erro ao verificar seed do roadmap:', error);
-    return false;
-  }
-
-  if((count || 0) > 0) return true;
-
-  for(let tabIndex = 0; tabIndex < ROADMAP_DEFAULT_TABS.length; tabIndex++){
-    const tab = ROADMAP_DEFAULT_TABS[tabIndex];
-    const { data: insertedTab, error: tabError } = await supabaseClient
-      .from('roadmap_tabs')
-      .insert([{ name: tab.name, ordem: tabIndex + 1, ativo: true }])
-      .select()
-      .single();
-
-    if(tabError){
-      console.error('Erro ao criar aba inicial:', tabError);
-      return false;
-    }
-
-    const rowPayload = tab.rows.map((row, rowIndex) => ({
-      tab_id: insertedTab.id,
-      nome: row.name,
-      tipo: row.type,
-      ordem: rowIndex + 1
-    }));
-
-    const { error: rowsError } = await supabaseClient
-      .from('roadmap_rows')
-      .insert(rowPayload);
-
-    if(rowsError){
-      console.error('Erro ao criar linhas iniciais:', rowsError);
-      return false;
-    }
-  }
-  return true;
-}
-
-async function loadRoadmapFromSupabase(){
-  isLoadingRoadmap = true;
+async function checkAuth(){
   try {
-    await ensureSeedData();
-
-    const { data: tabsData, error: tabsError } = await supabaseClient
-      .from('roadmap_tabs')
-      .select('*')
-      .eq('ativo', true)
-      .order('ordem', { ascending: true })
-      .order('id', { ascending: true });
-
-    if(tabsError) throw tabsError;
-
-    const { data: rowsData, error: rowsError } = await supabaseClient
-      .from('roadmap_rows')
-      .select('*')
-      .order('tab_id', { ascending: true })
-      .order('ordem', { ascending: true })
-      .order('id', { ascending: true });
-
-    if(rowsError) throw rowsError;
-
-    const { data: cellsData, error: cellsError } = await supabaseClient
-      .from('roadmap_cells')
-      .select('*');
-
-    if(cellsError) throw cellsError;
-
-    tabs = (tabsData || []).map(tab => {
-      const tabRows = (rowsData || [])
-        .filter(r => Number(r.tab_id) === Number(tab.id))
-        .map(r => ({
-          id: r.id,
-          type: r.tipo || r.type,
-          name: r.nome || r.name || 'Sem nome',
-          ordem: r.ordem || 0
-        }));
-
-      const taskRows = tabRows.filter(r => r.type !== 'group');
-      const taskIndexByRowId = new Map(taskRows.map((row, index) => [Number(row.id), index]));
-      const cells = {};
-
-      (cellsData || [])
-        .filter(c => Number(c.tab_id) === Number(tab.id))
-        .forEach(c => {
-          const taskIndex = taskIndexByRowId.get(Number(c.row_id));
-          if(taskIndex === undefined) return;
-          const key = `${taskIndex}-${c.data}`;
-          cells[key] = {
-            id: c.id,
-            type: c.tipo,
-            text: c.label || ''
-          };
-        });
-
-      return {
-        id: tab.id,
-        name: tab.name,
-        ordem: tab.ordem || 0,
-        cells,
-        rows: tabRows
-      };
-    });
-
-    if(!tabs.length){
-      tabs = ROADMAP_DEFAULT_TABS.map(tab => ({ name: tab.name, cells: {}, rows: tab.rows.map(row => ({...row})) }));
-    }
-
-    activeTab = Math.min(activeTab, Math.max(0, tabs.length - 1));
-    selected = [];
-    selectedRowIndex = null;
-    renderTabs();
-    render();
-  } catch (error) {
-    console.error('Erro ao carregar roadmap:', error);
-    alert('Não foi possível carregar o roadmap do Supabase.');
-  } finally {
-    isLoadingRoadmap = false;
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    canEdit = !!session;
+    updateAuthUI();
+  } catch(err) {
+    console.error('Erro ao verificar sessão:', err);
+    canEdit = false;
+    updateAuthUI();
   }
 }
 
-async function resequenceRows(tab){
-  const updates = tab.rows
-    .filter(row => row.id)
-    .map((row, index) => supabaseClient.from('roadmap_rows').update({ ordem: index + 1 }).eq('id', row.id));
-  if(!updates.length) return;
-  const results = await Promise.all(updates);
-  const failed = results.find(r => r.error);
-  if(failed?.error) console.error('Erro ao reordenar linhas:', failed.error);
+async function loadMetadata(){
+  const { data, error } = await supabaseClient.from('roadmap_meta').select('*').order('id', { ascending: true }).limit(1);
+  if (error) {
+    console.error('Erro ao carregar metadata:', error);
+    return;
+  }
+  if (data && data.length) {
+    metaRecord = data[0];
+    document.getElementById('mainTitle').textContent = metaRecord.titulo || 'Sistema SESI Esporte | Roadmap';
+    document.getElementById('leaders').textContent = metaRecord.lideres || '';
+    document.getElementById('period').textContent = metaRecord.periodo || '';
+    const link = document.getElementById('metaLink');
+    link.href = metaRecord.link_acompanhamento || '#';
+  }
+  stylizeTitle();
+}
+
+async function loadRoadmap(){
+  const { data: tabsData, error: tabsError } = await supabaseClient.from('roadmap_tabs').select('*').eq('ativo', true).order('ordem', { ascending: true });
+  if (tabsError) {
+    console.error('Erro ao carregar abas:', tabsError);
+    return;
+  }
+
+  const { data: rowsData, error: rowsError } = await supabaseClient.from('roadmap_rows').select('*').order('tab_id', { ascending: true }).order('ordem', { ascending: true });
+  if (rowsError) {
+    console.error('Erro ao carregar linhas:', rowsError);
+    return;
+  }
+
+  tabs = (tabsData || []).map(tab => ({
+    id: tab.id,
+    name: tab.nome || tab.name || `Aba ${tab.id}`,
+    ordem: tab.ordem,
+    ativo: tab.ativo,
+    rows: (rowsData || []).filter(r => r.tab_id === tab.id).map(r => ({
+      id: r.id,
+      tab_id: r.tab_id,
+      ordem: r.ordem,
+      type: r.tipo_linha,
+      name: r.nome,
+      cellMap: normalizeCellMap(r.cell_map)
+    }))
+  }));
+
+  if (!tabs.length) tabs = [{ id: null, name: 'Piloto', ordem: 1, ativo: true, rows: [] }];
+  if (activeTab >= tabs.length) activeTab = 0;
+  renderTabs();
+  render();
+}
+
+async function saveMetaField(field, value){
+  if (!canEdit) return;
+  if (!metaRecord?.id) {
+    const payload = { titulo:'Sistema SESI Esporte | Roadmap', lideres:'', periodo:'', link_acompanhamento:'#' };
+    payload[field] = value;
+    const { data, error } = await supabaseClient.from('roadmap_meta').insert([payload]).select().single();
+    if (error) { console.error('Erro ao criar metadata:', error); alert('Erro ao salvar cabeçalho.'); return; }
+    metaRecord = data;
+    return;
+  }
+  const payload = { [field]: value };
+  if ('updated_at' in metaRecord) payload.updated_at = new Date().toISOString();
+  const { data, error } = await supabaseClient.from('roadmap_meta').update(payload).eq('id', metaRecord.id).select().single();
+  if (error) { console.error('Erro ao salvar metadata:', error); alert('Erro ao salvar cabeçalho.'); return; }
+  metaRecord = data;
+}
+
+async function handleMetaBlur(field){
+  if (!canEdit) return;
+  let value = '';
+  if (field === 'titulo') value = document.getElementById('mainTitle').innerText.trim();
+  if (field === 'lideres') value = document.getElementById('leaders').innerText.trim();
+  if (field === 'periodo') value = document.getElementById('period').innerText.trim();
+  await saveMetaField(field, value);
+  if (field === 'titulo') stylizeTitle();
+}
+
+async function editMetaLink(){
+  if (!canEdit) return;
+  const current = metaRecord?.link_acompanhamento || document.getElementById('metaLink').href || '#';
+  const next = prompt('Informe o link de acompanhamento', current);
+  if (!next) return;
+  document.getElementById('metaLink').href = next;
+  await saveMetaField('link_acompanhamento', next);
+}
+
+async function persistRow(row){
+  const payload = { nome: row.name, tipo_linha: row.type, cell_map: row.cellMap, ordem: row.ordem };
+  if ('updated_at' in row) payload.updated_at = new Date().toISOString();
+  const { data, error } = await supabaseClient.from('roadmap_rows').update(payload).eq('id', row.id).select().single();
+  if (error) throw error;
+  row.name = data.nome;
+  row.type = data.tipo_linha;
+  row.cellMap = normalizeCellMap(data.cell_map);
+  row.ordem = data.ordem;
+}
+
+async function syncRowOrders(tab){
+  for (let i = 0; i < tab.rows.length; i++) {
+    tab.rows[i].ordem = i + 1;
+    const { error } = await supabaseClient.from('roadmap_rows').update({ ordem: tab.rows[i].ordem }).eq('id', tab.rows[i].id);
+    if (error) throw error;
+  }
+}
+
+async function syncTabOrders(){
+  for (let i = 0; i < tabs.length; i++) {
+    tabs[i].ordem = i + 1;
+    if (tabs[i].id) {
+      const { error } = await supabaseClient.from('roadmap_tabs').update({ ordem: tabs[i].ordem }).eq('id', tabs[i].id);
+      if (error) throw error;
+    }
+  }
 }
 
 async function updateRowName(i, val){
-  if(isPresentation() || !canEdit) return;
-  const row = tabs[activeTab].rows[i];
-  const newName = val.trim() || 'Sem nome';
-  row.name = newName;
-  if(!row.id) return;
-
-  const { error } = await supabaseClient
-    .from('roadmap_rows')
-    .update({ nome: newName })
-    .eq('id', row.id);
-
-  if(error){
-    console.error('Erro ao atualizar linha:', error);
-    alert('Erro ao atualizar nome da linha.');
-  }
+  if (isPresentation() || !canEdit) return;
+  const row = getCurrentRowByIndex(i);
+  if (!row) return;
+  row.name = (val || '').trim() || 'Sem nome';
+  try { await persistRow(row); } catch (error) { console.error('Erro ao atualizar linha:', error); alert('Erro ao atualizar linha.'); }
+  render();
 }
 
 function startSelect(k){
@@ -1210,211 +1125,122 @@ function startSelect(k){
   selected = [k];
   isMouseDown = true;
   applyPaint(k);
-  render();
 }
+
 function dragSelect(k){
   if(isPresentation() || !isMouseDown || !canEdit) return;
   if(!selected.includes(k)) selected.push(k);
   applyPaint(k);
-  render();
 }
 window.onmouseup = ()=> isMouseDown = false;
 
+function parseSelectionKey(k){
+  const [rowIndexStr, iso] = k.split('|');
+  return { rowIndex: Number(rowIndexStr), iso };
+}
+
+async function saveCellMapForRow(row){
+  try { await persistRow(row); } catch (error) { console.error('Erro ao salvar células:', error); alert('Erro ao salvar célula.'); }
+}
+
 async function applyPaint(k){
-  if(!canEdit || isLoadingRoadmap) return;
+  if (!canEdit) return;
   const mode = document.getElementById('mode').value;
-  const tab = tabs[activeTab];
-  const [taskIdx, iso] = k.split('-');
-  const row = getRowByTaskIndex(tab, taskIdx);
-  if(!row?.id) return;
-
-  if(mode === 'clear'){
-    delete tab.cells[k];
-    const { error } = await supabaseClient
-      .from('roadmap_cells')
-      .delete()
-      .eq('tab_id', tab.id)
-      .eq('row_id', row.id)
-      .eq('data', iso);
-    if(error){
-      console.error('Erro ao limpar célula:', error);
-      alert('Erro ao limpar célula.');
-    }
-    return;
-  }
-
-  tab.cells[k] = { ...(tab.cells[k] || {}), type: mode };
-  const payload = {
-    tab_id: tab.id,
-    row_id: row.id,
-    data: iso,
-    tipo: mode,
-    label: tab.cells[k]?.text || null
-  };
-
-  const { data, error } = await supabaseClient
-    .from('roadmap_cells')
-    .upsert(payload, { onConflict: 'tab_id,row_id,data' })
-    .select()
-    .single();
-
-  if(error){
-    console.error('Erro ao salvar célula:', error);
-    alert('Erro ao salvar célula.');
-    return;
-  }
-  if(data) tab.cells[k].id = data.id;
+  const { rowIndex, iso } = parseSelectionKey(k);
+  const row = getCurrentRowByIndex(rowIndex);
+  if (!row || row.type === 'group') return;
+  row.cellMap = normalizeCellMap(row.cellMap);
+  if(mode==='clear') delete row.cellMap[iso];
+  else row.cellMap[iso] = { ...(row.cellMap[iso] || {}), type: mode, text: row.cellMap[iso]?.text || '' };
+  await saveCellMapForRow(row);
+  render();
 }
 
 async function applyText(){
-  if(!canEdit || isLoadingRoadmap) return;
+  if (!canEdit) return;
   const txt = document.getElementById('text').value;
   const mode = document.getElementById('mode').value;
-  const tab = tabs[activeTab];
-
-  for (const k of selected) {
-    const [taskIdx, iso] = k.split('-');
-    const row = getRowByTaskIndex(tab, taskIdx);
-    if(!row?.id) continue;
-
-    if(!tab.cells[k]) tab.cells[k] = { type: mode };
-    tab.cells[k].text = txt;
-    if(!tab.cells[k].type) tab.cells[k].type = mode;
-
-    const payload = {
-      tab_id: tab.id,
-      row_id: row.id,
-      data: iso,
-      tipo: tab.cells[k].type || mode,
-      label: txt || null
-    };
-
-    const { data, error } = await supabaseClient
-      .from('roadmap_cells')
-      .upsert(payload, { onConflict: 'tab_id,row_id,data' })
-      .select()
-      .single();
-
-    if(error){
-      console.error('Erro ao salvar texto:', error);
-      alert('Erro ao salvar texto em uma célula.');
-      return;
-    }
-    if(data) tab.cells[k].id = data.id;
-  }
-
+  const touched = new Set();
+  selected.forEach(k => {
+    const { rowIndex, iso } = parseSelectionKey(k);
+    const row = getCurrentRowByIndex(rowIndex);
+    if (!row || row.type === 'group') return;
+    row.cellMap = normalizeCellMap(row.cellMap);
+    if (!row.cellMap[iso]) row.cellMap[iso] = { type: mode, text: '' };
+    if (!row.cellMap[iso].type) row.cellMap[iso].type = mode;
+    row.cellMap[iso].text = txt;
+    touched.add(rowIndex);
+  });
+  for (const rowIndex of touched) await saveCellMapForRow(getCurrentRowByIndex(rowIndex));
   render();
 }
 
 async function addTask(){
-  if(!canEdit) return;
+  if (!canEdit) return;
   const name = prompt('Nome da atividade');
   if(!name) return;
-
-  const tab = tabs[activeTab];
-  const rows = tab.rows;
-  const insertAt = selectedRowIndex !== null ? selectedRowIndex + 1 : rows.length;
-  const { data, error } = await supabaseClient
-    .from('roadmap_rows')
-    .insert([{ tab_id: tab.id, nome: name, tipo: 'task', ordem: insertAt + 1 }])
-    .select()
-    .single();
-
-  if(error){
-    console.error(error);
-    alert('Erro ao criar atividade.');
-    return;
-  }
-
-  rows.splice(insertAt, 0, { id: data.id, type: 'task', name: data.nome || name });
+  const tab = getCurrentTab();
+  const insertAt = selectedRowIndex !== null ? selectedRowIndex + 1 : tab.rows.length;
+  const payload = { tab_id: tab.id, ordem: insertAt + 1, tipo_linha: 'task', nome: name, cell_map: {} };
+  const { data, error } = await supabaseClient.from('roadmap_rows').insert([payload]).select().single();
+  if (error) { console.error(error); alert('Erro ao criar atividade.'); return; }
+  tab.rows.splice(insertAt, 0, { id:data.id, tab_id:data.tab_id, ordem:data.ordem, type:data.tipo_linha, name:data.nome, cellMap: normalizeCellMap(data.cell_map) });
+  try { await syncRowOrders(tab); } catch(error){ console.error(error); }
   selectedRowIndex = insertAt;
-  await resequenceRows(tab);
   render();
 }
 
 async function addGroup(){
-  if(!canEdit) return;
+  if (!canEdit) return;
   const name = prompt('Nome do grupo');
   if(!name) return;
-
-  const tab = tabs[activeTab];
-  const rows = tab.rows;
-  const insertAt = selectedRowIndex !== null ? selectedRowIndex + 1 : rows.length;
-  const { data, error } = await supabaseClient
-    .from('roadmap_rows')
-    .insert([{ tab_id: tab.id, nome: name, tipo: 'group', ordem: insertAt + 1 }])
-    .select()
-    .single();
-
-  if(error){
-    console.error(error);
-    alert('Erro ao criar grupo.');
-    return;
-  }
-
-  rows.splice(insertAt, 0, { id: data.id, type: 'group', name: data.nome || name });
+  const tab = getCurrentTab();
+  const insertAt = selectedRowIndex !== null ? selectedRowIndex + 1 : tab.rows.length;
+  const payload = { tab_id: tab.id, ordem: insertAt + 1, tipo_linha: 'group', nome: name, cell_map: {} };
+  const { data, error } = await supabaseClient.from('roadmap_rows').insert([payload]).select().single();
+  if (error) { console.error(error); alert('Erro ao criar grupo.'); return; }
+  tab.rows.splice(insertAt, 0, { id:data.id, tab_id:data.tab_id, ordem:data.ordem, type:data.tipo_linha, name:data.nome, cellMap: normalizeCellMap(data.cell_map) });
+  try { await syncRowOrders(tab); } catch(error){ console.error(error); }
   selectedRowIndex = insertAt;
-  await resequenceRows(tab);
   render();
 }
 
 async function addTab(){
-  if(!canEdit) return;
-  const name = prompt('Nome da aba');
-  if(!name) return;
-
-  const { data, error } = await supabaseClient
-    .from('roadmap_tabs')
-    .insert([{ name, ordem: tabs.length + 1, ativo: true }])
-    .select()
-    .single();
-
-  if(error){
-    console.error(error);
-    alert('Erro ao criar aba.');
-    return;
-  }
-
-  tabs.push({ id: data.id, name: data.name || name, cells: {}, rows: [] });
+  if (!canEdit) return;
+  const nome = prompt('Nome da aba');
+  if(!nome) return;
+  const ordem = tabs.length + 1;
+  const { data, error } = await supabaseClient.from('roadmap_tabs').insert([{ nome, ordem, ativo:true }]).select().single();
+  if (error) { console.error(error); alert('Erro ao criar aba.'); return; }
+  tabs.push({ id:data.id, name:data.nome || nome, ordem:data.ordem, ativo:data.ativo, rows:[] });
   activeTab = tabs.length - 1;
   renderTabs();
   render();
 }
 
 async function renameTab(){
-  if(!canEdit) return;
-  const tab = tabs[activeTab];
+  if (!canEdit) return;
+  const tab = getCurrentTab();
   const name = prompt('Novo nome', tab.name);
   if(!name) return;
   tab.name = name;
-
-  if(tab.id){
-    const { error } = await supabaseClient.from('roadmap_tabs').update({ name }).eq('id', tab.id);
-    if(error){
-      console.error(error);
-      alert('Erro ao renomear aba.');
-      return;
-    }
-  }
+  const { error } = await supabaseClient.from('roadmap_tabs').update({ nome: name }).eq('id', tab.id);
+  if (error) { console.error(error); alert('Erro ao renomear aba.'); }
   renderTabs();
 }
 
 async function deleteTab(){
-  if(!canEdit) return;
-  if(tabs.length <= 1) return alert('É necessário manter ao menos uma aba.');
-  const tab = tabs[activeTab];
-  if(!confirm(`Excluir aba "${tab.name}"?`)) return;
-
-  if(tab.id){
-    const { error } = await supabaseClient.from('roadmap_tabs').delete().eq('id', tab.id);
-    if(error){
-      console.error(error);
-      alert('Erro ao excluir aba.');
-      return;
-    }
-  }
+  if (!canEdit) return;
+  if(tabs.length <= 1) return alert('Mantenha pelo menos uma aba.');
+  const tab = getCurrentTab();
+  if(!confirm('Excluir aba?')) return;
+  const { error: rowsError } = await supabaseClient.from('roadmap_rows').delete().eq('tab_id', tab.id);
+  if (rowsError) { console.error(rowsError); alert('Erro ao excluir linhas da aba.'); return; }
+  const { error } = await supabaseClient.from('roadmap_tabs').delete().eq('id', tab.id);
+  if (error) { console.error(error); alert('Erro ao excluir aba.'); return; }
   tabs.splice(activeTab,1);
-  activeTab = Math.max(0, activeTab - 1);
+  activeTab = 0;
+  try { await syncTabOrders(); } catch(err){ console.error(err); }
   renderTabs();
   render();
 }
@@ -1422,82 +1248,51 @@ async function deleteTab(){
 async function editSelectedRow(){
   if(!canEdit) return;
   if(selectedRowIndex===null) return alert('Selecione uma linha');
-  const row = tabs[activeTab].rows[selectedRowIndex];
+  const row = getCurrentRowByIndex(selectedRowIndex);
   if(row.type === 'group') return alert('Esta é uma linha de grupo. Use os botões de Grupo para editá-la.');
   const name = prompt('Editar nome da atividade', row.name);
-  if(!name) return;
-  row.name = name;
-  render();
-  await updateRowName(selectedRowIndex, name);
+  if(name) { row.name = name; await updateRowName(selectedRowIndex, name); }
 }
 
 async function deleteSelectedRow(){
   if(!canEdit) return;
   if(selectedRowIndex===null) return alert('Selecione uma linha');
-  const tab = tabs[activeTab];
-  const row = tab.rows[selectedRowIndex];
+  const row = getCurrentRowByIndex(selectedRowIndex);
   if(row.type === 'group') return alert('Esta é uma linha de grupo. Use os botões de Grupo para excluí-la.');
-  if(!confirm('Excluir atividade selecionada?')) return;
-
-  if(row.id){
+  if(confirm('Excluir atividade selecionada?')){
+    const tab = getCurrentTab();
     const { error } = await supabaseClient.from('roadmap_rows').delete().eq('id', row.id);
-    if(error){
-      console.error(error);
-      alert('Erro ao excluir atividade.');
-      return;
-    }
+    if (error) { console.error(error); alert('Erro ao excluir atividade.'); return; }
+    tab.rows.splice(selectedRowIndex,1);
+    selectedRowIndex=null;
+    try { await syncRowOrders(tab); } catch(err){ console.error(err); }
+    render();
   }
-
-  tab.rows.splice(selectedRowIndex,1);
-  selectedRowIndex=null;
-  await resequenceRows(tab);
-  render();
 }
 
 async function editGroup(){
   if(!canEdit) return;
   if(selectedRowIndex===null) return alert('Selecione um grupo');
-  const row = tabs[activeTab].rows[selectedRowIndex];
+  const row = getCurrentRowByIndex(selectedRowIndex);
   if(row.type !== 'group') return alert('A linha selecionada não é um grupo.');
   const name = prompt('Editar nome do grupo', row.name);
-  if(!name) return;
-  row.name = name;
-  render();
-  await updateRowName(selectedRowIndex, name);
+  if(name) { row.name = name; await updateRowName(selectedRowIndex, name); }
 }
 
 async function deleteGroup(){
   if(!canEdit) return;
   if(selectedRowIndex===null) return alert('Selecione um grupo');
-  const tab = tabs[activeTab];
-  const row = tab.rows[selectedRowIndex];
+  const row = getCurrentRowByIndex(selectedRowIndex);
   if(row.type !== 'group') return alert('A linha selecionada não é um grupo.');
-  if(!confirm('Excluir o grupo "' + row.name + '"?')) return;
-
-  if(row.id){
+  if(confirm('Excluir o grupo "' + row.name + '"?')){
+    const tab = getCurrentTab();
     const { error } = await supabaseClient.from('roadmap_rows').delete().eq('id', row.id);
-    if(error){
-      console.error(error);
-      alert('Erro ao excluir grupo.');
-      return;
-    }
+    if (error) { console.error(error); alert('Erro ao excluir grupo.'); return; }
+    tab.rows.splice(selectedRowIndex,1);
+    selectedRowIndex=null;
+    try { await syncRowOrders(tab); } catch(err){ console.error(err); }
+    render();
   }
-
-  tab.rows.splice(selectedRowIndex,1);
-  selectedRowIndex=null;
-  await resequenceRows(tab);
-  render();
-}
-
-async function initRoadmap(){
-  await checkAuthRoadmap();
-  renderTabs();
-  render();
-  await loadRoadmapFromSupabase();
-  supabaseClient.auth.onAuthStateChange(async () => {
-    await checkAuthRoadmap();
-    await loadRoadmapFromSupabase();
-  });
 }
 
 function exportPDF(){
@@ -1527,8 +1322,14 @@ window.addEventListener('afterprint', () => {
   stylizeTitle();
 });
 
-initMonthFilter();
-stylizeTitle();
+async function initRoadmap(){
+  initMonthFilter();
+  await checkAuth();
+  await loadMetadata();
+  await loadRoadmap();
+  stylizeTitle();
+}
+
 initRoadmap();
 </script>
 </body>
