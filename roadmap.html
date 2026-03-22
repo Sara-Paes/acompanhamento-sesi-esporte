@@ -919,7 +919,11 @@ function render(){
   dates.forEach((d, i) => {
     const cls = monthClasses[d.monthIndex % monthClasses.length];
     const showMonth = i === 0 || dates[i-1].month !== d.month;
-    html += `<td class='month ${cls}'>${showMonth ? `<span class="month-pill">${monthNamesFullPt[d.monthIndex]} ${d.year}</span>` : ''}</td>`;
+    html += `<td class='month ${cls}'>${
+  showMonth 
+    ? `<span class="month-pill">${monthNamesPt[d.monthIndex]}<br>${d.year}</span>` 
+    : ''
+}</td>`;
   });
   html += "</tr>";
 
