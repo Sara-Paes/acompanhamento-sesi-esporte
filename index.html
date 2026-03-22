@@ -208,8 +208,8 @@
         .item-card.status-pending::before { background: linear-gradient(180deg, #F17950, #E46C43); }
         .item-card.status-in-progress::before { background: linear-gradient(180deg, #78517C, #66446A); }
         .item-card.status-completed::before { background: linear-gradient(180deg, #83D1C4, #6EC0B1); }
-        .item-card.status-transformed::before { background: linear-gradient(180deg, #78517C, #66446A); }
-        .item-card.status-archived::before { background: linear-gradient(180deg, #d1d5db, #b9bec7); }
+        .item-card.status-transformed::before { background: linear-gradient(180deg, #6e88c9, #5873b4); }
+        .item-card.status-archived::before { background: linear-gradient(180deg, #c8b9ae, #b5a79d); }
         .item-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
         .item-content { flex: 1; min-width:0; }
         .item-title {
@@ -994,10 +994,10 @@
             display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;
         }
         .feedback-secondary-actions .btn-inline { min-height:38px; }
-        .feedback-secondary-actions .btn-inline.archived-state { background:#f1f3f5; color:#6b7280; border-color:#d9dde4; }
-        .feedback-secondary-actions .btn-inline.transformed-state { background:#ecf8f4; color:#188b5a; border-color:#caecd9; }
-        .badge-archived { background:#f1f3f5; color:#6b7280; border-color:#d9dde4; }
-        .badge-transformed { background:#ecf8f4; color:#188b5a; border-color:#caecd9; }
+        .feedback-secondary-actions .btn-inline.archived-state { background:#f6f2ee; color:#7d6f66; border-color:#e4dad2; }
+        .feedback-secondary-actions .btn-inline.transformed-state { background:#eef4ff; color:#5572b8; border-color:#d7e2ff; }
+        .badge-archived { background:#f6f2ee; color:#7d6f66; border-color:#e4dad2; }
+        .badge-transformed { background:#eef4ff; color:#5572b8; border-color:#d7e2ff; }
         .minutes-controls-right { display:flex; justify-content:flex-end; }
         .compact-main .field-value { font-size:.92rem; }
         .compact-inline-badges { display:flex; flex-wrap:wrap; gap:4px; }
@@ -1438,7 +1438,100 @@
             line-height:1.28 !important;
         }
 
-    </style>
+    
+        /* ===== Etapa 23 | feedback + atas ===== */
+        #minutesList .minutes-list > .item-card{
+            display:block !important;
+            position:relative !important;
+            padding-right:18px !important;
+        }
+        #minutesList .minutes-list > .item-card .item-content{
+            display:block !important;
+            width:100% !important;
+            padding-right:170px !important;
+        }
+        #minutesList .minutes-list > .item-card .item-actions{
+            position:absolute !important;
+            top:20px !important;
+            right:18px !important;
+            display:flex !important;
+            flex-direction:row !important;
+            gap:10px !important;
+            align-items:center !important;
+        }
+        #minutesList .minutes-list > .item-card .item-description{
+            width:100% !important;
+            max-width:none !important;
+            text-align:justify !important;
+        }
+        #minutesList .minutes-list > .item-card .item-title{
+            margin-right:180px !important;
+        }
+        @media (max-width: 980px){
+            #minutesList .minutes-list > .item-card .item-content{
+                padding-right:0 !important;
+            }
+            #minutesList .minutes-list > .item-card .item-actions{
+                position:static !important;
+                margin-top:12px !important;
+            }
+            #minutesList .minutes-list > .item-card .item-title{
+                margin-right:0 !important;
+            }
+        }
+
+    
+        /* ===== Etapa 24 | correção real das cores do feedback ===== */
+        .item-card.status-transformed::before {
+            background: linear-gradient(180deg, #6e88c9, #5873b4) !important;
+        }
+        .item-card.status-archived::before {
+            background: linear-gradient(180deg, #c8b9ae, #b5a79d) !important;
+        }
+        .feedback-secondary-actions .btn-inline.transformed-state,
+        .badge-transformed {
+            background: #eef4ff !important;
+            color: #5572b8 !important;
+            border-color: #d7e2ff !important;
+        }
+        .feedback-secondary-actions .btn-inline.archived-state,
+        .badge-archived {
+            background: #f6f2ee !important;
+            color: #7d6f66 !important;
+            border-color: #e4dad2 !important;
+        }
+
+    
+/* ===== FIX DEFINITIVO REAL: CORES DO FEEDBACK ===== */
+.item-badge.badge-feedback-created {
+    background: #eef4ff !important;
+    color: #5572b8 !important;
+    border-color: #d7e2ff !important;
+}
+.item-badge.badge-feedback-archived {
+    background: #f6f2ee !important;
+    color: #7d6f66 !important;
+    border-color: #e4dad2 !important;
+}
+.feedback-secondary-actions .btn-inline.feedback-created-state {
+    background: #eef4ff !important;
+    color: #5572b8 !important;
+    border-color: #d7e2ff !important;
+}
+.feedback-secondary-actions .btn-inline.feedback-archived-state {
+    background: #f6f2ee !important;
+    color: #7d6f66 !important;
+    border-color: #e4dad2 !important;
+}
+
+
+/* ===== FIX REAL FINAL: feedback criado/arquivado ===== */
+.item-badge.badge-feedback-created{background:#eef4ff!important;color:#5572b8!important;border-color:#d7e2ff!important;}
+.item-badge.badge-feedback-archived{background:#f6f2ee!important;color:#7d6f66!important;border-color:#e4dad2!important;}
+.feedback-secondary-actions .btn-inline.feedback-created-state{background:#eef4ff!important;color:#5572b8!important;border-color:#d7e2ff!important;}
+.feedback-secondary-actions .btn-inline.feedback-archived-state{background:#f6f2ee!important;color:#7d6f66!important;border-color:#e4dad2!important;}
+
+</style>
 </head>
 <body>
     <!-- LOGIN SCREEN -->
@@ -2421,8 +2514,8 @@
             const listHtml = items.map(feedback => {
                 const statusClass = mapFeedbackStatusClass(feedback.status);
                 const badgeClass = mapFeedbackBadgeClass(feedback.status);
-                const archiveBtnClass = feedback.status === 'arquivado' ? 'archived-state' : '';
-                const transformBtnClass = feedback.status === 'transformado_em_tarefa' ? 'transformed-state' : '';
+                const archiveBtnClass = feedback.status === 'arquivado' ? 'feedback-archived-state' : '';
+                const transformBtnClass = feedback.status === 'transformado_em_tarefa' ? 'feedback-created-state' : '';
                 return `
                 <div class="item-card status-${statusClass}">
                     <div class="item-content feedback-grid compact-feedback-grid">
@@ -2978,8 +3071,8 @@
         function mapFeedbackBadgeClass(status) {
             if (status === 'novo') return 'in-progress';
             if (status === 'em_analise') return 'pending';
-            if (status === 'transformado_em_tarefa') return 'transformed';
-            if (status === 'arquivado') return 'archived';
+            if (status === 'transformado_em_tarefa') return 'feedback-created';
+            if (status === 'arquivado') return 'feedback-archived';
             return 'phase';
         }
 
@@ -3123,9 +3216,28 @@
         function pdfLabeledLine(pdf, label, value, x, y, width, lineHeight = 4.4) {
             const text = `${label} ${sanitizePdfText(value)}`;
             const lines = pdf.splitTextToSize(text, width);
-            pdf.text(lines, x, y);
-            return y + (lines.length * lineHeight);
+
+            lines.forEach(line => {
+                pdf.text(line, x, y, {
+                    maxWidth: width,
+                    align: 'justify'
+                });
+                y += lineHeight;
+            });
+
+            return y;
         }
+
+        function pdfMinutesBlock(pdf, label, value, x, y, width, lineHeight = 4.6) {
+            const text = `${label} ${sanitizePdfText(value)}`;
+            const lines = pdf.splitTextToSize(text, width);
+            lines.forEach(line => {
+                pdf.text(line, x, y);
+                y += lineHeight;
+            });
+            return y;
+        }
+
 
         function pdfStatusColor(status) {
             if (status === 'pending' || status === 'novo' || status === 'em_analise') return [241,121,80];
@@ -3410,7 +3522,7 @@
                 return;
             }
 
-            list.innerHTML = `<div class="items-list">${minutes.map(m => `
+            list.innerHTML = `<div class="items-list minutes-list">${minutes.map(m => `
                 <div class="item-card">
                     <div class="item-content">
                         <div class="item-title">${formatDate(m.date)}</div>
@@ -3553,6 +3665,7 @@
                 pdf.roundedRect(15, boxY, 180, height, 4, 4, 'S');
                 pdf.setFillColor(...statusColor);
                 pdf.rect(15, boxY, 2, height, 'F');
+                pdf.setCharSpace(0);
                 y = boxY + height + 6;
             });
 
@@ -3591,15 +3704,16 @@
                 pdf.text(formatDate(minute.date), 20, boxY + 7);
 
                 pdf.setFont('helvetica', 'normal');
-                pdf.setFontSize(8.8);
+                pdf.setFontSize(8.6);
                 pdf.setTextColor(70,78,88);
+                pdf.setCharSpace(0);
 
                 let yy = boxY + 14;
-                if (minute.participants) yy = pdfLabeledLine(pdf, 'Participantes:', minute.participants, 20, yy, 168, 4.4) + 1;
-                if (minute.achievements) yy = pdfLabeledLine(pdf, 'Alinhamentos:', minute.achievements, 20, yy, 168, 4.4) + 1;
-                if (minute.notes) yy = pdfLabeledLine(pdf, 'Obs:', minute.notes, 20, yy, 168, 4.4) + 1;
+                if (minute.participants) yy = pdfMinutesBlock(pdf, 'Participantes:', minute.participants, 20, yy, 162, 4.6) + 1.5;
+                if (minute.achievements) yy = pdfMinutesBlock(pdf, 'Alinhamentos:', minute.achievements, 20, yy, 162, 4.6) + 1.5;
+                if (minute.notes) yy = pdfMinutesBlock(pdf, 'Obs:', minute.notes, 20, yy, 162, 4.6) + 1.5;
 
-                const height = Math.max(24, yy - boxY + 5);
+                const height = yy - boxY + 10;
                 pdf.setDrawColor(225,228,232);
                 pdf.roundedRect(15, boxY, 180, height, 4, 4, 'S');
                 pdf.setFillColor(139,144,151);
@@ -3794,12 +3908,12 @@ function exportMinutesToCSV() {
         }
 
         function mapFeedbackStatusClass(status) {
-            const map = { novo: 'pending', em_analise: 'in-progress', transformado_em_tarefa: 'completed', arquivado: 'completed' };
+            const map = { novo: 'pending', em_analise: 'in-progress', transformado_em_tarefa: 'transformed', arquivado: 'archived' };
             return map[status] || 'pending';
         }
 
         function mapFeedbackBadgeClass(status) {
-            const map = { novo: 'pending', em_analise: 'in-progress', transformado_em_tarefa: 'completed', arquivado: 'completed' };
+            const map = { novo: 'pending', em_analise: 'in-progress', transformado_em_tarefa: 'feedback-created', arquivado: 'feedback-archived' };
             return map[status] || 'pending';
         }
 
