@@ -745,6 +745,10 @@
               <option value="entrega">Por Prazo</option>
             </select>
             <input class="srch" id="searchTasks" placeholder="Buscar tarefas..." oninput="filterTasks()" style="width:180px;">
+            <label class="sw-wrap" id="toggleCompletedWrap">
+              <div class="sw" id="swCompleted"></div>
+              <span id="swCompletedLabel">Mostrar concluídas</span>
+            </label>
           </div>
           <div id="tasksList"></div>
         </div>
@@ -1138,6 +1142,7 @@ let currentTaskAttachmentUrl = null, currentTaskAttachmentName = null;
 let currentDraggedTaskId = null;
 let completedCollapsed = false;
 let showArchivedFeedback = false;
+let showCompletedTasks = false;
 let taskStatusFilter = '';
 let feedbackStatusFilter = '';
 let chartTaskStatus = null, chartFbStatus = null, chartFbType = null, chartFbPriority = null;
@@ -1146,6 +1151,7 @@ let chartTaskStatus = null, chartFbStatus = null, chartFbType = null, chartFbPri
 document.addEventListener('DOMContentLoaded', async () => {
   supabaseClient = window.supabase.createClient(PROJECT_URL, ANON_KEY);
   document.getElementById('toggleArchivedWrap').addEventListener('click', toggleShowArchived);
+  document.getElementById('toggleCompletedWrap').addEventListener('click', toggleShowCompleted);
   try {
     const { data:{ session } } = await supabaseClient.auth.getSession();
     if (session) { isAuthenticated=true; isViewOnly=false; showApp(); }
@@ -1286,6 +1292,7 @@ function filterTasks(){
   let items = tasksData.filter(t=>{
     const ms = (t.description||'').toLowerCase().includes(search) || (t.responsible||'').toLowerCase().includes(search);
     const mo = !origin || (t.origin||'manual')===origin;
+    if(t.status==='completed' && !showCompletedTasks && !taskStatusFilter) return false;
     const mst = !taskStatusFilter || t.status===taskStatusFilter;
     return ms && mo && mst;
   });
@@ -1472,6 +1479,14 @@ function setFeedbackStatusFilter(v, el){
   document.querySelectorAll('#feedback .fchip').forEach(c=>c.classList.remove('on'));
   if(el) el.classList.add('on');
   filterFeedback();
+}
+
+function toggleShowCompleted(){
+  showCompletedTasks = !showCompletedTasks;
+  const sw = document.getElementById('swCompleted');
+  sw.classList.toggle('on', showCompletedTasks);
+  document.getElementById('swCompletedLabel').textContent = showCompletedTasks ? 'Ocultar concluídas' : 'Mostrar concluídas';
+  filterTasks();
 }
 
 function toggleShowArchived(){
