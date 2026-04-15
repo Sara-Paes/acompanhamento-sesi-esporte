@@ -776,6 +776,7 @@
             <button class="fchip on" onclick="setFeedbackStatusFilter('',this)">Todos</button>
             <button class="fchip" onclick="setFeedbackStatusFilter('novo',this)">Novos</button>
             <button class="fchip" onclick="setFeedbackStatusFilter('transformado_em_tarefa',this)">Tarefa criada</button>
+            <button class="fchip" onclick="setFeedbackStatusFilter('arquivado',this)">Arquivados</button>
             <select class="si" id="filterFeedbackType" onchange="filterFeedback()">
               <option value="">Todos tipos</option>
               <option>Erro</option><option>Melhoria</option><option>Dúvida</option><option>Sugestão</option><option>Outro</option>
@@ -1302,7 +1303,8 @@ function filterTasks(){
   else if(sort==='entrega') items.sort((a,b)=>new Date(a.deadline||'9999-12-31')-new Date(b.deadline||'9999-12-31'));
   displayTasks(items);
   const p=tasksData.filter(t=>t.status==='in-progress').length, c=tasksData.filter(t=>t.status==='completed').length;
-  document.getElementById('tasksInfo').textContent=`${tasksData.length} total · ${p} em andamento · ${c} concluídas`;
+  const pend=tasksData.filter(t=>t.status==='pending').length;
+  document.getElementById('tasksInfo').textContent=`${tasksData.length} total · ${pend} pendentes · ${p} em andamento · ${c} concluídas`;
 }
 
 function displayTasks(items){
@@ -1478,6 +1480,12 @@ function setFeedbackStatusFilter(v, el){
   feedbackStatusFilter = v;
   document.querySelectorAll('#feedback .fchip').forEach(c=>c.classList.remove('on'));
   if(el) el.classList.add('on');
+  // Se filtrou por arquivados, garante que aparecem
+  if(v === 'arquivado' && !showArchivedFeedback) {
+    showArchivedFeedback = true;
+    document.getElementById('swArchived').classList.add('on');
+    document.getElementById('swLabel').textContent = 'Ocultar arquivados';
+  }
   filterFeedback();
 }
 
