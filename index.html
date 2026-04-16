@@ -1649,7 +1649,7 @@ function openTaskDetailsModal(id){
         <div class="det-item"><label>Prazo</label><div class="val">${t.deadline?fmtDate(t.deadline):'—'}</div></div>
       </div>
       ${t.notes?`<div class="det-item"><label>Observações</label><div class="det-box">${esc(t.notes).replace(/\n/g,'<br>')}</div></div>`:''}
-      ${t.chatMsg?`<div class="det-item"><label style="color:#6b3fa0">💬 Chat com Dev</label><div class="det-box" style="border-color:rgba(107,63,160,.2);background:#f8f5ff;white-space:pre-wrap;">${esc(t.chatMsg)}</div></div>`:''}
+      ${t.chatMsg?`<div class="det-item"><label style="color:#6b3fa0">💬 Chat com o Desenvolvedor</label><div class="chat-thread" style="max-height:220px;overflow-y:auto;border:1px solid rgba(107,63,160,.18);border-radius:8px;background:#f8f5ff;padding:10px;">${parseChatMessages(t.chatMsg).map(m=>{const cls=m.role==='dev'?'from-dev':'from-team';const who=m.role==='dev'?'💬 TecSports':'👤 Equipe SESI';const ts=m.ts?new Date(m.ts).toLocaleString('pt-BR'):'';return `<div class="chat-msg ${cls}"><div>${esc(m.text)}</div><div class="chat-msg-meta">${who}${ts?' · '+ts:''}</div></div>`;}).join('')}</div></div>`:''}
       ${(t.attachmentUrl||t.link)?`<div class="det-item"><label>Arquivos / Links</label><div style="display:flex;gap:8px;margin-top:4px;">${t.attachmentUrl?`<button class="btn btn-sm" onclick="openAttachment('${t.attachmentUrl}')">📎 Abrir anexo</button>`:''}${t.link?`<a class="btn btn-sm" href="${t.link}" target="_blank" rel="noopener">↗ Abrir link</a>`:''}</div></div>`:''}
     </div>`;
   document.getElementById('taskDetailsModal').classList.add('active');
