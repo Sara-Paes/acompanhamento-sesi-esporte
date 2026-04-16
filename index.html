@@ -38,6 +38,9 @@
       --purple-bg: #f5f0fc;
       --teal:      #0d7a7a;
       --teal-bg:   #eef8f8;
+      --warning:   #d97706;
+      --danger:    #dc2626;
+      --red:       #d42b2b;
       --shadow-xs: 0 1px 2px rgba(20,20,18,.04);
       --shadow-sm: 0 2px 8px rgba(20,20,18,.06);
       --shadow-md: 0 4px 20px rgba(20,20,18,.09);
@@ -554,18 +557,107 @@
     .ext-title { font-size: .8rem; font-weight: 600; color: var(--text-2); }
     .ext-sub { font-size: .71rem; color: var(--text-4); margin-top: 1px; }
 
+    /* ── CHAT DEV ── */
+    .chat-btn { font:inherit; font-size:.72rem; font-weight:600; padding:3px 9px; border-radius:5px; border:1px solid rgba(107,63,160,.25); background:#f8f5ff; color:#6b3fa0; cursor:pointer; transition:.12s; }
+    .chat-btn:hover { background:#ede8ff; }
+    .chat-btn.has-msg { background:#6b3fa0; color:#fff; border-color:#6b3fa0; }
+    .chat-thread { display:flex; flex-direction:column; gap:10px; max-height:340px; overflow-y:auto; padding:4px 0 8px; }
+    .chat-msg { padding:9px 12px; border-radius:var(--r-md); max-width:90%; font-size:.82rem; line-height:1.55; }
+    .chat-msg.from-team { background:var(--surface-2); border:1px solid var(--border); align-self:flex-start; }
+    .chat-msg.from-dev  { background:#ede8ff; border:1px solid rgba(107,63,160,.2); align-self:flex-end; }
+    .chat-msg-meta { font-size:.65rem; color:var(--text-4); margin-top:4px; font-family:'Geist Mono',monospace; }
+    .chat-compose { display:flex; gap:8px; margin-top:10px; align-items:flex-end; padding-top:10px; border-top:1px solid var(--border); }
+    .chat-compose textarea { flex:1; padding:8px 10px; border:1px solid var(--border); border-radius:var(--r); font:inherit; font-size:.82rem; resize:none; height:64px; }
+    .chat-compose textarea:focus { outline:none; border-color:#6b3fa0; box-shadow:0 0 0 3px rgba(107,63,160,.07); }
+
+    /* ── RESPONSIVIDADE ── */
     @media (max-width: 820px) {
+      /* Topbar */
       nav.topnav { display: none; }
-      .home-hero { grid-template-columns: 1fr; }
+      .topbar-inner { padding: 0 14px; }
+      .topbar-right .tbtn:not(.out) { display: none; }
+
+      /* Hero e layout */
+      .home-hero { grid-template-columns: 1fr; padding: 24px 16px; }
       .home-hero-right { display: none; }
+      .home-body, .pw { padding-left: 14px; padding-right: 14px; }
+      .bc-wrap { padding-left: 14px; padding-right: 14px; }
+
+      /* Page header */
+      .ph { flex-direction: column; align-items: flex-start; gap: 10px; }
+      .ph-actions { width: 100%; flex-wrap: wrap; }
+      .ph-title { font-size: 1.55rem; }
+      .hero-h1 { font-size: 1.75rem; }
+
+      /* Cards */
+      .card-b { padding: 10px 12px; }
+      .card-h { padding: 12px 14px 10px; flex-wrap: wrap; gap: 8px; }
+
+      /* Filtros */
+      .fb { gap: 5px; }
+      .fchip { font-size: .7rem; padding: 3px 8px; }
+      .si { font-size: .75rem; }
+      .srch { width: 100% !important; font-size: .75rem; }
+      .sw-wrap { font-size: .71rem; }
+
+      /* Tabelas → Cards empilhados */
+      .dt thead { display: none; }
+      .dt, .dt tbody, .dt tr, .dt td { display: block; width: 100%; }
+      .dt tr {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--r-md);
+        margin-bottom: 8px;
+        padding: 12px 14px;
+      }
+      .dt tr:hover td { background: transparent; }
+      .dt td {
+        padding: 3px 0;
+        border: none;
+        font-size: .82rem;
+        display: flex;
+        gap: 6px;
+        align-items: baseline;
+      }
+      .dt td::before {
+        content: attr(data-label);
+        font-size: .6rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        color: var(--text-4);
+        min-width: 78px;
+        flex-shrink: 0;
+        padding-top: 2px;
+      }
+      .dt td.td-main { display: block; padding-bottom: 8px; border-bottom: 1px solid var(--border-light); margin-bottom: 4px; }
+      .dt td.td-main::before { display: none; }
+      .dt td.td-hide { display: none; }
+      .dt td.td-actions { justify-content: flex-end; padding-top: 8px; border-top: 1px solid var(--border-light); margin-top: 4px; }
+      .dt td.td-actions::before { display: none; }
+      .arch-row { opacity: .4; }
+
+      /* Outros layouts */
       .kb { grid-template-columns: 1fr; }
-      .chart-grid { grid-template-columns: 1fr; }
+      .chart-grid { grid-template-columns: 1fr !important; }
       .det-row, .fr.c2, .fr.c3 { grid-template-columns: 1fr; }
-      .home-hero { padding: 36px 22px 40px; }
-      .home-body, .pw { padding-left: 16px; padding-right: 16px; }
-      .bc-wrap { padding-left: 16px; padding-right: 16px; }
-      .topbar-inner { padding: 0 16px; }
       .ds-band { grid-template-columns: repeat(2,1fr); }
+      .hn-grid { grid-template-columns: 1fr 1fr !important; }
+
+      /* Modals como bottom sheet */
+      .modal { align-items: flex-end; padding: 0; }
+      .modal-card, .modal-card.wide {
+        width: 100%; max-width: 100%;
+        border-radius: var(--r-lg) var(--r-lg) 0 0;
+        max-height: 92vh;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .hn-grid { grid-template-columns: 1fr !important; }
+      .hero-h1 { font-size: 1.4rem; }
+      .ph-title { font-size: 1.35rem; }
+      .ds-band { grid-template-columns: 1fr 1fr; }
     }
   </style>
 </head>
@@ -743,6 +835,7 @@
               <option value="data-asc">Mais Antigos</option>
               <option value="status">Por Status</option>
               <option value="entrega">Por Prazo</option>
+              <option value="prioridade">Por Prioridade</option>
             </select>
             <input class="srch" id="searchTasks" placeholder="Buscar tarefas..." oninput="filterTasks()" style="width:180px;">
             <label class="sw-wrap" id="toggleCompletedWrap">
@@ -892,6 +985,23 @@
       <div id="minutesList"></div>
     </div>
   </div>
+
+<!-- MODAL CHAT DEV -->
+<div class="modal" id="chatModal">
+  <div class="modal-card wide">
+    <div class="modal-hd">
+      <div class="modal-title" style="color:#6b3fa0;">💬 Chat com o Desenvolvedor</div>
+      <button class="modal-x" onclick="closeChatModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="chatThread" class="chat-thread"></div>
+      <div class="chat-compose" id="chatCompose">
+        <textarea id="chatInput" placeholder="Digite sua mensagem..." rows="2"></textarea>
+        <button class="btn" style="background:#6b3fa0;color:#fff;border-color:#6b3fa0;height:64px;padding:0 14px;" onclick="sendChatMsg()">Enviar</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 </div><!-- /mainApp -->
 <!-- MODAL TAREFA -->
@@ -1135,7 +1245,7 @@ const PROJECT_URL = "https://wgbdbazajqswszhzzodt.supabase.co";
 const ANON_KEY    = "sb_publishable_u3dOv62_ppsPRrIk4U-plA_ENwWtk_4";
 
 let supabaseClient = null;
-let isAuthenticated = false, isViewOnly = false;
+let isAuthenticated = false, isViewOnly = false, isDevMode = false;
 let tasksData = [], minutesData = [], feedbackData = [];
 let editingTaskId = null, editingMinutesId = null, editingFeedbackId = null;
 let selectedFeedbackId = null;
@@ -1148,7 +1258,79 @@ let taskStatusFilter = '';
 let feedbackStatusFilter = '';
 let chartTaskStatus = null, chartFbStatus = null, chartFbType = null, chartFbPriority = null;
 
-// ── INIT ──
+// -- CHAT COM DEV --
+// Formato do campo observacao_dev no banco:
+// JSON array de mensagens: [{role:'team'|'dev', text:'...', ts:'ISO'}]
+// Se campo é texto simples (migração), converte automaticamente.
+
+let currentChatTaskId = null;
+
+function parseChatMessages(raw) {
+  if(!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if(Array.isArray(parsed)) return parsed;
+  } catch(e) {}
+  // fallback: texto simples vira mensagem do dev
+  return [{role:'dev', text: raw, ts: ''}];
+}
+
+function openChatModal(id) {
+  const t = tasksData.find(x=>x.id===id);
+  if(!t) return;
+  currentChatTaskId = id;
+  renderChatThread(parseChatMessages(t.chatMsg));
+  // só quem pode escrever: dev ou edição total (não viewOnly)
+  const canWrite = isDevMode || !isViewOnly;
+  document.getElementById('chatCompose').style.display = canWrite ? 'flex' : 'none';
+  document.getElementById('chatModal').classList.add('active');
+}
+
+function closeChatModal() {
+  document.getElementById('chatModal').classList.remove('active');
+  currentChatTaskId = null;
+}
+
+function renderChatThread(msgs) {
+  const el = document.getElementById('chatThread');
+  if(!msgs.length) {
+    el.innerHTML = '<div style="text-align:center;padding:24px;font-size:.8rem;color:var(--text-4);">Nenhuma mensagem ainda. Inicie a conversa.</div>';
+    return;
+  }
+  el.innerHTML = msgs.map(m => {
+    const cls = m.role === 'dev' ? 'from-dev' : 'from-team';
+    const who = m.role === 'dev' ? '💬 TecSports' : '👤 Equipe SESI';
+    const ts  = m.ts ? new Date(m.ts).toLocaleString('pt-BR') : '';
+    return `<div class="chat-msg ${cls}">
+      <div>${esc(m.text)}</div>
+      <div class="chat-msg-meta">${who}${ts ? ' · ' + ts : ''}</div>
+    </div>`;
+  }).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+async function sendChatMsg() {
+  const text = document.getElementById('chatInput').value.trim();
+  if(!text || !currentChatTaskId) return;
+  const t = tasksData.find(x=>x.id===currentChatTaskId);
+  if(!t) return;
+  const msgs = parseChatMessages(t.chatMsg);
+  const role = isDevMode ? 'dev' : 'team';
+  msgs.push({role, text, ts: new Date().toISOString()});
+  const newVal = JSON.stringify(msgs);
+  try {
+    const {error} = await supabaseClient.from('tarefas')
+      .update({observacao_dev: newVal})
+      .eq('id', currentChatTaskId);
+    if(error) throw error;
+    t.chatMsg = newVal;
+    document.getElementById('chatInput').value = '';
+    renderChatThread(msgs);
+    filterTasks(); // atualiza botão na lista
+  } catch(e) { alert('Erro ao enviar: ' + e.message); }
+}
+
+// -- INIT --
 document.addEventListener('DOMContentLoaded', async () => {
   supabaseClient = window.supabase.createClient(PROJECT_URL, ANON_KEY);
   document.getElementById('toggleArchivedWrap').addEventListener('click', toggleShowArchived);
@@ -1156,12 +1338,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     const { data:{ session } } = await supabaseClient.auth.getSession();
     if (session) { isAuthenticated=true; isViewOnly=false; showApp(); }
-    else if (sessionStorage.getItem('view_only')==='true') { isAuthenticated=true; isViewOnly=true; showApp(); }
+    else if (sessionStorage.getItem('view_only')==='true') { isAuthenticated=true; isViewOnly=true; isDevMode=sessionStorage.getItem('dev_mode')==='true'; showApp(); }
     else { document.getElementById('loginScreen').style.display='flex'; }
   } catch(e) { console.error('init:', e?.message||JSON.stringify(e)); }
 });
 
-// ── AUTH ──
+// -- AUTH --
 async function handleLogin(e) {
   e.preventDefault();
   const errEl = document.getElementById('loginError');
@@ -1172,8 +1354,19 @@ async function handleLogin(e) {
       password: document.getElementById('passwordInput').value
     });
     if (error) throw error;
-    isAuthenticated=true; isViewOnly=false;
-    sessionStorage.setItem('view_only','false');
+    isAuthenticated=true;
+    // Emails com acesso ao chat mas visualizacao apenas
+    const chatEmails = [
+      'nicolas@tecsports.com',
+      'karin@tecsports.com',
+      'gabrieli@tecsports.com',
+      'roberto@tecsports.com'
+    ];
+    const email = document.getElementById('emailInput').value.toLowerCase().trim();
+    isDevMode = chatEmails.includes(email); // isDevMode = pode escrever no chat
+    isViewOnly = isDevMode; // chat users sao view-only para tudo mais
+    sessionStorage.setItem('view_only', isViewOnly ? 'true' : 'false');
+    sessionStorage.setItem('dev_mode', isDevMode ? 'true' : 'false');
     showApp();
   } catch(e) { errEl.textContent = 'Erro: ' + e.message; }
 }
@@ -1191,8 +1384,8 @@ function showApp() {
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('mainApp').style.display='block';
   const badge = document.getElementById('modeBadge');
-  badge.textContent = isViewOnly ? 'Visualização' : '● Edição ativa';
-  badge.className = 'mode-badge ' + (isViewOnly ? 'view' : 'edit');
+  badge.textContent = isDevMode ? '💬 TecSports' : isViewOnly ? 'Visualização' : '● Edição ativa';
+  badge.className = 'mode-badge ' + (isDevMode ? 'dev' : isViewOnly ? 'view' : 'edit');
   document.getElementById('btnNewTask').disabled = isViewOnly;
   document.getElementById('btnNewMinutes').disabled = isViewOnly;
   if (isViewOnly) {
@@ -1203,7 +1396,7 @@ function showApp() {
   loadTasks(); loadMinutes(); loadFeedback();
 }
 
-// ── TAB ──
+// -- TAB --
 const PAGE_LABELS = {inicio:'Início',tarefas:'Tarefas',feedback:'Feedback do Piloto',kanban:'Kanban',dashboard:'Dashboard',atas:'Atas de Reunião'};
 
 function switchTab(name, e, fromCode) {
@@ -1230,7 +1423,7 @@ function switchTab(name, e, fromCode) {
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
-// ── UTILS ──
+// -- UTILS --
 function esc(v){ return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 function stripHtml(v){ const d=document.createElement('div'); d.innerHTML=v||''; return (d.textContent||d.innerText||'').trim(); }
 function fmtDate(ds){ if(!ds)return'—'; const d=new Date(ds+'T00:00:00'); return d.toLocaleDateString('pt-BR'); }
@@ -1264,7 +1457,7 @@ function deadlineDisplay(dl){
   return `<span class="dl-ok">${fmtDate(dl)}</span>`;
 }
 
-// ── TASKS ──
+// -- TASKS --
 async function loadTasks(){
   try {
     const { data, error } = await supabaseClient.from('tarefas').select('*').order('data_criacao',{ascending:false});
@@ -1274,7 +1467,7 @@ async function loadTasks(){
       notes:t.observacao, date:t.data_criacao, deadline:t.previsao_entrega,
       attachmentUrl:t.anexo_url, attachmentName:t.anexo_nome, link:t.link_externo,
       origin:t.origem, priority:t.prioridade, unit:t.unidade,
-      feedbackId:t.feedback_id, solicitante:t.solicitante||null
+      feedbackId:t.feedback_id, solicitante:t.solicitante||null, chatMsg:t.observacao_dev||null
     }));
     filterTasks(); updateHomeStats(); updateDashboardIfVisible();
   } catch(e){ console.error('loadTasks:', e?.message||JSON.stringify(e)); }
@@ -1301,6 +1494,7 @@ function filterTasks(){
   else if(sort==='data-asc') items.sort((a,b)=>new Date(a.date)-new Date(b.date));
   else if(sort==='status') { const o={pending:1,'in-progress':2,completed:3}; items.sort((a,b)=>o[a.status]-o[b.status]); }
   else if(sort==='entrega') items.sort((a,b)=>new Date(a.deadline||'9999-12-31')-new Date(b.deadline||'9999-12-31'));
+  else if(sort==='prioridade') { const po={'Crítica':1,'Alta':2,'Média':3,'Baixa':4}; items.sort((a,b)=>(po[a.priority]||9)-(po[b.priority]||9)); }
   displayTasks(items);
   const p=tasksData.filter(t=>t.status==='in-progress').length, c=tasksData.filter(t=>t.status==='completed').length;
   const pend=tasksData.filter(t=>t.status==='pending').length;
@@ -1317,19 +1511,22 @@ function displayTasks(items){
     </tr></thead>
     <tbody>${items.map(t=>`
       <tr>
-        <td><div class="tdm">${esc(t.description||'—')}</div>
+        <td class="td-main">
+          <div class="tdm">${esc(t.description||'—')}</div>
           ${t.origin==='feedback_piloto' && (t.unit||t.solicitante) ? `<div class="tds">Unidade: ${esc(t.unit||'—')} · Solicitante: ${esc(t.solicitante||'—')}</div>` : ''}
+          <div style="display:flex;gap:5px;margin-top:5px;flex-wrap:wrap;">${taskStatusChip(t.status)}${priorityChip(t.priority)||''}</div>
         </td>
-        <td>${taskStatusChip(t.status)}</td>
-        <td>${priorityChip(t.priority)||'<span class="tdx">—</span>'}</td>
-        <td class="tdx">${esc(t.responsible||'—')}</td>
-        <td><span class="ch ${t.origin==='feedback_piloto'?'ch-feedback':'ch-manual'}">${t.origin==='feedback_piloto'?'Feedback':'Manual'}</span></td>
-        <td>${deadlineDisplay(t.deadline)}</td>
-        <td><div class="ac">
-          <button class="btn btn-sm" onclick="openTaskDetailsModal('${t.id}')" title="Ver detalhes">ⓘ</button>
+        <td data-label="Status" class="td-hide">${taskStatusChip(t.status)}</td>
+        <td data-label="Prioridade" class="td-hide">${priorityChip(t.priority)||'<span class="tdx">—</span>'}</td>
+        <td data-label="Responsável">${esc(t.responsible||'—')}</td>
+        <td data-label="Origem" class="td-hide"><span class="ch ${t.origin==='feedback_piloto'?'ch-feedback':'ch-manual'}">${t.origin==='feedback_piloto'?'Feedback':'Manual'}</span></td>
+        <td data-label="Prazo">${deadlineDisplay(t.deadline)}</td>
+        <td class="td-actions"><div class="ac">
+          <button class="btn btn-sm" onclick="openTaskDetailsModal('${t.id}')" title="Ver">ⓘ</button>
           ${t.attachmentUrl?`<button class="btn btn-sm" onclick="openAttachment('${t.attachmentUrl}')" title="Anexo">📎</button>`:''}
+          <button class="btn btn-sm chat-btn ${t.chatMsg?'has-msg':''}" onclick="openChatModal('${t.id}')" title="Chat com dev">💬</button>
           <button class="btn btn-sm" onclick="editTask('${t.id}')" ${isViewOnly?'disabled':''}>Editar</button>
-          <button class="btn btn-sm" onclick="deleteTask('${t.id}')" ${isViewOnly?'disabled':''} style="color:var(--danger)">Excluir</button>
+          <button class="btn btn-sm" onclick="deleteTask('${t.id}')" ${isViewOnly?'disabled':''} style="color:var(--red)">Excluir</button>
         </div></td>
       </tr>`).join('')}
     </tbody></table>`;
@@ -1452,13 +1649,14 @@ function openTaskDetailsModal(id){
         <div class="det-item"><label>Prazo</label><div class="val">${t.deadline?fmtDate(t.deadline):'—'}</div></div>
       </div>
       ${t.notes?`<div class="det-item"><label>Observações</label><div class="det-box">${esc(t.notes).replace(/\n/g,'<br>')}</div></div>`:''}
+      ${t.chatMsg?`<div class="det-item"><label style="color:#6b3fa0">💬 Chat com Dev</label><div class="det-box" style="border-color:rgba(107,63,160,.2);background:#f8f5ff;white-space:pre-wrap;">${esc(t.chatMsg)}</div></div>`:''}
       ${(t.attachmentUrl||t.link)?`<div class="det-item"><label>Arquivos / Links</label><div style="display:flex;gap:8px;margin-top:4px;">${t.attachmentUrl?`<button class="btn btn-sm" onclick="openAttachment('${t.attachmentUrl}')">📎 Abrir anexo</button>`:''}${t.link?`<a class="btn btn-sm" href="${t.link}" target="_blank" rel="noopener">↗ Abrir link</a>`:''}</div></div>`:''}
     </div>`;
   document.getElementById('taskDetailsModal').classList.add('active');
 }
 function closeTaskDetailsModal(){ document.getElementById('taskDetailsModal').classList.remove('active'); }
 
-// ── FEEDBACK ──
+// -- FEEDBACK --
 async function loadFeedback(){
   try {
     const { data, error } = await supabaseClient.from('feedback_piloto').select('*').order('created_at',{ascending:false});
@@ -1535,23 +1733,24 @@ function displayFeedback(items){
       const isArch = f.status==='arquivado';
       const isTransf = f.status==='transformado_em_tarefa';
       return `<tr class="${isArch?'arch-row':''}">
-        <td>
+        <td class="td-main">
           <div class="tdm">${esc(f.titulo||'Sem título')}</div>
           <div class="tds">${esc(f.unidade||'—')} · ${esc(f.funcionalidade||'—')}</div>
+          <div style="display:flex;gap:5px;margin-top:5px;flex-wrap:wrap;">${fbStatusChip(f.status)}${priorityChip(f.prioridade)||''}</div>
         </td>
-        <td>${fbStatusChip(f.status)}</td>
-        <td class="tdx">${esc(f.tipo_apontamento||'—')}</td>
-        <td>${priorityChip(f.prioridade)||'<span class="tdx">—</span>'}</td>
-        <td class="tdx">${esc(f.nome_responsavel||'—')}</td>
-        <td class="tdx">${fmtDateTime(f.created_at)}</td>
-        <td><div class="ac">
+        <td data-label="Status" class="td-hide">${fbStatusChip(f.status)}</td>
+        <td data-label="Tipo" class="td-hide">${esc(f.tipo_apontamento||'—')}</td>
+        <td data-label="Prioridade" class="td-hide">${priorityChip(f.prioridade)||'<span class="tdx">—</span>'}</td>
+        <td data-label="Solicitante">${esc(f.nome_responsavel||'—')}</td>
+        <td data-label="Data" class="tdx">${fmtDateTime(f.created_at)}</td>
+        <td class="td-actions"><div class="ac">
           <button class="btn btn-sm" onclick="openFeedbackDetailsModal('${f.id}')" title="Ver">ⓘ</button>
           ${f.anexo_url?`<button class="btn btn-sm" onclick="openAttachment('${f.anexo_url}')" title="Anexo">📎</button>`:''}
           <button class="btn btn-sm" onclick="openFeedbackEditModal('${f.id}')" ${isViewOnly?'disabled':''}>Editar</button>
           ${!isArch && !isTransf ? `<button class="btn btn-sm btn-red" onclick="openFeedbackTaskModal('${f.id}')" ${isViewOnly?'disabled':''}>→ Tarefa</button>` : ''}
           ${!isArch && !isTransf ? `<button class="btn btn-sm" onclick="archiveFeedback('${f.id}')" ${isViewOnly?'disabled':''} style="color:var(--text-3)">Arquivar</button>` : ''}
-          ${isTransf ? `<button class="btn btn-sm" onclick="undoFeedbackTask('${f.id}')" ${isViewOnly?'disabled':''} title="Desfazer transformação" style="color:var(--warning)">↩ Desfazer</button>` : ''}
-          <button class="btn btn-sm" onclick="deleteFeedback('${f.id}')" ${isViewOnly?'disabled':''} style="color:var(--danger)">Excluir</button>
+          ${isTransf ? `<button class="btn btn-sm" onclick="undoFeedbackTask('${f.id}')" ${isViewOnly?'disabled':''} style="color:var(--warning)">↩ Desfazer</button>` : ''}
+          <button class="btn btn-sm" onclick="deleteFeedback('${f.id}')" ${isViewOnly?'disabled':''} style="color:var(--red)">Excluir</button>
         </div></td>
       </tr>`;
     }).join('')}
@@ -1641,7 +1840,7 @@ async function deleteFeedback(id){
   } catch(e){ loadFeedback(); alert('Erro: '+e.message); }
 }
 
-// ── DESFAZER TRANSFORMAÇÃO ──
+// -- DESFAZER TRANSFORMAÇÃO --
 async function undoFeedbackTask(feedbackId){
   if(isViewOnly) return;
   if(!confirm('Isso excluirá a tarefa criada e retornará o feedback ao status "Novo". Confirmar?')) return;
@@ -1659,7 +1858,7 @@ async function undoFeedbackTask(feedbackId){
   } catch(e){ alert('Erro ao desfazer: '+e.message); }
 }
 
-// ── TRANSFORMAR FEEDBACK EM TAREFA ──
+// -- TRANSFORMAR FEEDBACK EM TAREFA --
 function openFeedbackTaskModal(id){
   if(isViewOnly) return;
   const f = feedbackData.find(x=>x.id===id); if(!f) return;
@@ -1724,7 +1923,7 @@ async function openAttachment(path){
   } catch(e){ alert('Não foi possível abrir o anexo: '+e.message); }
 }
 
-// ── ATAS ──
+// -- ATAS --
 async function loadMinutes(){
   try {
     const {data,error}=await supabaseClient.from('atas').select('*').order('data',{ascending:false});
@@ -1856,7 +2055,7 @@ function editMinutes(id){
   document.getElementById('minutesModal').classList.add('active');
 }
 
-// ── KANBAN ──
+// -- KANBAN --
 function renderKanban(){
   ['pending','in-progress','completed'].forEach(s=>{
     const items=tasksData.filter(t=>t.status===s);
@@ -1895,7 +2094,7 @@ async function handleKanbanDrop(e,status){
   currentDraggedTaskId=null;
 }
 
-// ── DASHBOARD ──
+// -- DASHBOARD --
 function updateHomeStats(){
   const ip = tasksData.filter(t=>t.status==='in-progress').length;
   const fbn = feedbackData.filter(f=>f.status==='novo').length;
@@ -1963,28 +2162,255 @@ function updateDashboard(){
     ['#9b1c1c','#d42b2b','#c45d12','#1a7a4a']);
 }
 
-// ── EXPORTAÇÕES ──
+// -- EXPORTAÇÕES --
 function exportTasksXLS(){
-  const items=tasksData;
-  const rows=[['Título','Status','Prioridade','Responsável','Origem','Unidade','Solicitante','Data','Prazo','Observações']];
-  items.forEach(t=>rows.push([t.description,getStatusLabel(t.status),t.priority||'',t.responsible||'',t.origin==='feedback_piloto'?'Feedback':'Manual',t.unit||'',t.solicitante||'',fmtDate(t.date),t.deadline?fmtDate(t.deadline):'',t.notes||'']));
-  const ws=XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols']=[{wch:40},{wch:14},{wch:10},{wch:18},{wch:10},{wch:18},{wch:18},{wch:12},{wch:12},{wch:40}];
-  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Tarefas');
-  XLSX.writeFile(wb,`tarefas-sesi-${new Date().toISOString().slice(0,10)}.xlsx`);
+  const items = tasksData;
+  const wb = XLSX.utils.book_new();
+
+  // -- Header row data
+  const headers = ['#','Titulo','Status','Prioridade','Responsavel','Origem','Unidade','Solicitante','Data Criacao','Previsao Entrega','Observacoes'];
+  const rows = [headers];
+  items.forEach((t,i) => rows.push([
+    i+1,
+    t.description||'',
+    getStatusLabel(t.status),
+    t.priority||'',
+    t.responsible||'',
+    t.origin==='feedback_piloto'?'Feedback':'Manual',
+    t.unit||'',
+    t.solicitante||'',
+    fmtDate(t.date),
+    t.deadline?fmtDate(t.deadline):'',
+    t.notes||''
+  ]));
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+
+  // Column widths
+  ws['!cols'] = [{wch:5},{wch:42},{wch:14},{wch:12},{wch:20},{wch:10},{wch:22},{wch:22},{wch:14},{wch:16},{wch:44}];
+
+  // Freeze header row
+  ws['!freeze'] = {xSplit:0, ySplit:1};
+
+  // Style header cells
+  const headerStyle = {
+    font:{bold:true, color:{rgb:'FFFFFF'}, sz:10, name:'Calibri'},
+    fill:{fgColor:{rgb:'B50010'}},
+    alignment:{horizontal:'center', vertical:'center', wrapText:true},
+    border:{
+      top:{style:'thin',color:{rgb:'880008'}},
+      bottom:{style:'thin',color:{rgb:'880008'}},
+      left:{style:'thin',color:{rgb:'880008'}},
+      right:{style:'thin',color:{rgb:'880008'}}
+    }
+  };
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  for(let C = range.s.c; C <= range.e.c; C++){
+    const addr = XLSX.utils.encode_cell({r:0, c:C});
+    if(!ws[addr]) ws[addr] = {v:''};
+    ws[addr].s = headerStyle;
+  }
+
+  // Row height for header
+  ws['!rows'] = [{hpt:24}];
+
+  // Style data rows alternating
+  const evenStyle = {
+    fill:{fgColor:{rgb:'FFF5F5'}},
+    font:{sz:10, name:'Calibri'},
+    border:{bottom:{style:'thin',color:{rgb:'EEDDDD'}}}
+  };
+  const oddStyle = {
+    fill:{fgColor:{rgb:'FFFFFF'}},
+    font:{sz:10, name:'Calibri'},
+    border:{bottom:{style:'thin',color:{rgb:'EEDDDD'}}
+  }};
+  const statusColors = {
+    'Pendente':{rgb:'FFF3E8'},
+    'Em Andamento':{rgb:'F3EEFF'},
+    'Concluida':{rgb:'EDFFF5'}
+  };
+  const prioColors = {
+    'Critica':{rgb:'FFE5E5'},
+    'Alta':{rgb:'FFF0E0'},
+    'Media':{rgb:'FFFBE0'},
+    'Baixa':{rgb:'EDFFF5'}
+  };
+
+  for(let R = 1; R <= range.e.r; R++){
+    ws['!rows'].push({hpt:18});
+    for(let C = range.s.c; C <= range.e.c; C++){
+      const addr = XLSX.utils.encode_cell({r:R, c:C});
+      if(!ws[addr]) ws[addr] = {v:''};
+      const base = R%2===0 ? {...evenStyle} : {...oddStyle};
+      // Color status col (col 2)
+      if(C===2){
+        const sv = ws[addr].v;
+        const sc = statusColors[sv];
+        if(sc) base.fill = {fgColor:sc};
+        base.alignment = {horizontal:'center'};
+      }
+      // Color priority col (col 3)
+      if(C===3){
+        const pv = ws[addr].v.replace('i','i').replace('í','i').replace('é','e').replace('ê','e');
+        const pc = prioColors[pv] || prioColors[ws[addr].v];
+        if(pc) base.fill = {fgColor:pc};
+        base.alignment = {horizontal:'center'};
+      }
+      // Center # col
+      if(C===0) base.alignment = {horizontal:'center'};
+      ws[addr].s = base;
+    }
+  }
+
+  // Auto-filter
+  ws['!autofilter'] = {ref: ws['!ref']};
+
+  XLSX.utils.book_append_sheet(wb, ws, 'Tarefas');
+
+  // Summary sheet
+  const total = items.length;
+  const pend = items.filter(t=>t.status==='pending').length;
+  const prog = items.filter(t=>t.status==='in-progress').length;
+  const done = items.filter(t=>t.status==='completed').length;
+  const sumRows = [
+    ['SESI Esporte - Resumo de Tarefas'],
+    ['Gerado em', new Date().toLocaleString('pt-BR')],
+    [''],
+    ['Indicador','Quantidade'],
+    ['Total de Tarefas', total],
+    ['Pendentes', pend],
+    ['Em Andamento', prog],
+    ['Concluidas', done],
+    [''],
+    ['Por Prioridade',''],
+    ['Critica', items.filter(t=>t.priority==='Crítica').length],
+    ['Alta', items.filter(t=>t.priority==='Alta').length],
+    ['Media', items.filter(t=>t.priority==='Média').length],
+    ['Baixa', items.filter(t=>t.priority==='Baixa').length],
+  ];
+  const ws2 = XLSX.utils.aoa_to_sheet(sumRows);
+  ws2['!cols'] = [{wch:28},{wch:18}];
+  // Title style
+  if(ws2['A1']) ws2['A1'].s = {font:{bold:true,sz:13,name:'Calibri',color:{rgb:'B50010'}},fill:{fgColor:{rgb:'FFF0F0'}}};
+  if(ws2['A4']) ws2['A4'].s = {font:{bold:true,sz:10,name:'Calibri',color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'B50010'}},alignment:{horizontal:'center'}};
+  if(ws2['B4']) ws2['B4'].s = {font:{bold:true,sz:10,name:'Calibri',color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'B50010'}},alignment:{horizontal:'center'}};
+  XLSX.utils.book_append_sheet(wb, ws2, 'Resumo');
+
+  XLSX.writeFile(wb, `tarefas-sesi-${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 
 function exportFeedbackXLS(){
-  const items=feedbackData;
-  const rows=[['Título','Status','Tipo','Prioridade','Funcionalidade','Unidade','Solicitante','Perfil','Data','Descrição']];
-  items.forEach(f=>rows.push([f.titulo,getFbStatusLabel(f.status),f.tipo_apontamento||'',f.prioridade||'',f.funcionalidade||'',f.unidade||'',f.nome_responsavel||'',f.perfil_usuario||'',fmtDateTime(f.created_at),stripHtml(f.descricao||'')]));
-  const ws=XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols']=[{wch:40},{wch:14},{wch:10},{wch:10},{wch:18},{wch:20},{wch:18},{wch:14},{wch:18},{wch:50}];
-  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Feedback');
-  XLSX.writeFile(wb,`feedback-sesi-${new Date().toISOString().slice(0,10)}.xlsx`);
+  const items = getFilteredFeedback().concat(
+    feedbackData.filter(f=>f.status==='arquivado')
+      .filter(f=>!getFilteredFeedback().find(x=>x.id===f.id))
+  );
+  const wb = XLSX.utils.book_new();
+
+  const headers = ['#','Titulo','Status','Tipo','Prioridade','Funcionalidade','Unidade','Solicitante','Perfil','Data','Descricao'];
+  const rows = [headers];
+  items.forEach((f,i) => rows.push([
+    i+1,
+    f.titulo||'',
+    getFbStatusLabel(f.status),
+    f.tipo_apontamento||'',
+    f.prioridade||'',
+    f.funcionalidade||'',
+    f.unidade||'',
+    f.nome_responsavel||'',
+    f.perfil_usuario||'',
+    fmtDateTime(f.created_at),
+    stripHtml(f.descricao||'')
+  ]));
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch:5},{wch:42},{wch:14},{wch:10},{wch:12},{wch:20},{wch:22},{wch:22},{wch:14},{wch:18},{wch:52}];
+  ws['!freeze'] = {xSplit:0, ySplit:1};
+  ws['!autofilter'] = {ref: ws['!ref']};
+
+  const hStyle = {
+    font:{bold:true,color:{rgb:'FFFFFF'},sz:10,name:'Calibri'},
+    fill:{fgColor:{rgb:'1A3A8A'}},
+    alignment:{horizontal:'center',vertical:'center'},
+    border:{bottom:{style:'thin',color:{rgb:'0D2660'}}}
+  };
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  for(let C = range.s.c; C <= range.e.c; C++){
+    const addr = XLSX.utils.encode_cell({r:0,c:C});
+    if(!ws[addr]) ws[addr]={v:''};
+    ws[addr].s = hStyle;
+  }
+  ws['!rows'] = [{hpt:24}];
+
+  const statusFill = {
+    'Novo':{rgb:'E8F0FF'},
+    'Tarefa criada':{rgb:'E8FFF2'},
+    'Arquivado':{rgb:'F3F3F3'}
+  };
+  const prioFill = {
+    'Critica':{rgb:'FFE5E5'},'Crítica':{rgb:'FFE5E5'},
+    'Alta':{rgb:'FFF0E0'},
+    'Media':{rgb:'FFFBE0'},'Média':{rgb:'FFFBE0'},
+    'Baixa':{rgb:'EDFFF5'}
+  };
+
+  for(let R=1; R<=range.e.r; R++){
+    ws['!rows'].push({hpt:18});
+    for(let C=range.s.c; C<=range.e.c; C++){
+      const addr = XLSX.utils.encode_cell({r:R,c:C});
+      if(!ws[addr]) ws[addr]={v:''};
+      const base = {
+        font:{sz:10,name:'Calibri'},
+        fill:{fgColor:{rgb: R%2===0?'F0F4FF':'FFFFFF'}},
+        border:{bottom:{style:'thin',color:{rgb:'DDE5F5'}}}
+      };
+      if(C===2){const sf=statusFill[ws[addr].v];if(sf)base.fill={fgColor:sf};base.alignment={horizontal:'center'};}
+      if(C===4){const pf=prioFill[ws[addr].v];if(pf)base.fill={fgColor:pf};base.alignment={horizontal:'center'};}
+      if(C===0) base.alignment={horizontal:'center'};
+      ws[addr].s = base;
+    }
+  }
+
+  XLSX.utils.book_append_sheet(wb, ws, 'Feedback');
+
+  // Summary sheet
+  const total = feedbackData.length;
+  const novos = feedbackData.filter(f=>f.status==='novo').length;
+  const transf = feedbackData.filter(f=>f.status==='transformado_em_tarefa').length;
+  const arch  = feedbackData.filter(f=>f.status==='arquivado').length;
+  const byType = {};
+  const byPrio = {};
+  feedbackData.forEach(f=>{
+    const t=f.tipo_apontamento||'Outro'; byType[t]=(byType[t]||0)+1;
+    const p=f.prioridade||'Baixa'; byPrio[p]=(byPrio[p]||0)+1;
+  });
+  const sumRows = [
+    ['SESI Esporte - Resumo de Feedbacks'],
+    ['Gerado em', new Date().toLocaleString('pt-BR')],
+    [''],
+    ['Indicador','Quantidade'],
+    ['Total', total],
+    ['Novos', novos],
+    ['Transformados em Tarefa', transf],
+    ['Arquivados', arch],
+    [''],
+    ['Por Tipo',''],
+    ...Object.entries(byType).map(([k,v])=>[k,v]),
+    [''],
+    ['Por Prioridade',''],
+    ...Object.entries(byPrio).map(([k,v])=>[k,v]),
+  ];
+  const ws2 = XLSX.utils.aoa_to_sheet(sumRows);
+  ws2['!cols'] = [{wch:30},{wch:16}];
+  if(ws2['A1']) ws2['A1'].s={font:{bold:true,sz:13,name:'Calibri',color:{rgb:'1A3A8A'}},fill:{fgColor:{rgb:'EEF2FF'}}};
+  if(ws2['A4']) ws2['A4'].s={font:{bold:true,sz:10,name:'Calibri',color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'1A3A8A'}},alignment:{horizontal:'center'}};
+  if(ws2['B4']) ws2['B4'].s={font:{bold:true,sz:10,name:'Calibri',color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'1A3A8A'}},alignment:{horizontal:'center'}};
+  XLSX.utils.book_append_sheet(wb, ws2, 'Resumo');
+
+  XLSX.writeFile(wb, `feedback-sesi-${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 
-// ── PDF ──
+// -- PDF --
 function makePdf(){ const ctor=(window.jspdf&&window.jspdf.jsPDF)||window.jsPDF||null; if(!ctor){alert('jsPDF não carregado');return null;} return new ctor({unit:'mm',format:'a4',orientation:'portrait'}); }
 function pdfBrand(pdf){ pdf.setFillColor(227,6,19); pdf.rect(0,0,210,8,'F'); pdf.setFont('helvetica','bold'); pdf.setFontSize(13); pdf.setTextColor(31,31,31); pdf.text('Sistema SESI Esporte',15,18); pdf.setFont('helvetica','normal'); pdf.setFontSize(8); pdf.setTextColor(107,114,128); pdf.text('Acompanhamento de Implantação',15,24); return 30; }
 function pdfSectionTitle(pdf,title,y){ pdf.setFont('helvetica','bold'); pdf.setFontSize(11); pdf.setTextColor(17,24,39); pdf.text(title,15,y); pdf.setDrawColor(228,231,236); pdf.line(15,y+2,195,y+2); return y+8; }
@@ -2110,7 +2536,7 @@ function exportDashboardToPDF(){
   pdf.save(`dashboard-sesi-${new Date().toISOString().slice(0,10)}.pdf`);
 }
 
-// ── BACKUP ──
+// -- BACKUP --
 function exportBackup(){
   const b={timestamp:new Date().toISOString(),tasks:tasksData,minutes:minutesData,feedback:feedbackData,version:'3.0'};
   const blob=new Blob([JSON.stringify(b,null,2)],{type:'application/json'});
@@ -2135,7 +2561,7 @@ async function importBackup(file){
   reader.readAsText(file);
 }
 
-// ── MODAL CLOSE ON BACKDROP ──
+// -- MODAL CLOSE ON BACKDROP --
 window.onclick=function(e){
   ['taskModal','taskDetailsModal','minutesModal','feedbackDetailsModal','feedbackEditModal','feedbackTaskModal'].forEach(id=>{
     const m=document.getElementById(id); if(m&&e.target===m) m.classList.remove('active');
