@@ -17,8 +17,7 @@ Sistema de acompanhamento de implantação com gerenciamento de tarefas e atas d
 ## 🔐 Acesso
 
 - **Visualização**: Clique em "Apenas Visualizar" (sem senha)
-- **Edição**: Senha: `SESIESPORTEAPP`
-
+-
 ## 💾 Backup com Google Drive
 
 ### Configuração Inicial
